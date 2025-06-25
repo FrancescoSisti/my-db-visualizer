@@ -1,4 +1,4 @@
-// Global type definitions for Electron APIs exposed through preload
+// Global type definitions for the renderer process
 
 export interface DatabaseConfig {
   host: string
@@ -8,15 +8,11 @@ export interface DatabaseConfig {
   database?: string
 }
 
-export interface DatabaseResponse<T = any> {
+export interface DatabaseResponse {
   success: boolean
   message?: string
-  data?: T
-  fields?: Array<{
-    name: string
-    type: number
-    length: number
-  }>
+  data?: any[]
+  fields?: Array<{ name: string; type: string }>
 }
 
 export interface Database {
@@ -24,22 +20,28 @@ export interface Database {
 }
 
 export interface Table {
-  [key: string]: string
+  name?: string
+  [key: string]: any // For MySQL's Tables_in_* format
 }
 
+// Electron API definitions
 declare global {
   interface Window {
     dbAPI: {
       testConnection: (config: DatabaseConfig) => Promise<DatabaseResponse>
       connect: (config: DatabaseConfig) => Promise<DatabaseResponse>
-      getDatabases: () => Promise<DatabaseResponse<Database[]>>
-      getTables: (database: string) => Promise<DatabaseResponse<Table[]>>
+      disconnect: () => Promise<void>
+      getDatabases: () => Promise<DatabaseResponse>
+      getTables: (database: string) => Promise<DatabaseResponse>
       executeQuery: (query: string) => Promise<DatabaseResponse>
-      ping: () => Promise<DatabaseResponse>
+      getTableStructure: (database: string, table: string) => Promise<DatabaseResponse>
+      getTableData: (database: string, table: string, limit?: number, offset?: number) => Promise<DatabaseResponse>
     }
     appAPI: {
       getVersion: () => string
       getPlatform: () => string
     }
   }
-} 
+}
+
+export {} 

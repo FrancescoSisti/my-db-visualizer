@@ -8,7 +8,7 @@
           Database Explorer
         </h2>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          {{ connectionInfo }}
+          Connected to {{ currentConnection?.host || 'Unknown' }}
         </p>
       </div>
 
@@ -71,13 +71,14 @@
           </div>
 
           <div v-if="tablesLoading" class="text-center py-4">
-            <LoadingSpinner message="Loading tables..." />
+            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600 mx-auto"></div>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Loading tables...</p>
           </div>
 
           <div v-else class="space-y-1">
             <div
               v-for="table in tables"
-              :key="table.name || table['Tables_in_' + currentDatabase]"
+              :key="getTableName(table)"
               class="table-item"
               :class="{ 'active': currentTable === getTableName(table) }"
               @click="selectTable(getTableName(table))"
@@ -131,56 +132,45 @@
       <div class="flex-1 overflow-hidden">
         <!-- Welcome State -->
         <div v-if="!currentDatabase" class="flex items-center justify-center h-full">
-          <div class="text-center">
-            <div class="text-gray-400 mb-4">
-              <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <EmptyState
+            title="Select a Database"
+            description="Choose a database from the sidebar to explore its tables and data"
+          >
+            <template #icon>
+              <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 1.79 4 4 4h8c0 2.21 1.79 4 4 4V7c0-2.21-1.79-4-4-4H8c-2.21 0-4 1.79-4 4z" />
               </svg>
-            </div>
-            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
-              Select a Database
-            </h3>
-            <p class="text-gray-500 dark:text-gray-400">
-              Choose a database from the sidebar to explore its tables and data
-            </p>
-          </div>
+            </template>
+          </EmptyState>
         </div>
 
         <!-- Database Selected State -->
         <div v-else-if="!currentTable" class="flex items-center justify-center h-full">
-          <div class="text-center">
-            <div class="text-gray-400 mb-4">
-              <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <EmptyState
+            :title="`Database: ${currentDatabase}`"
+            :description="`${tables.length} tables available. Select a table from the sidebar to view its structure and data.`"
+          >
+            <template #icon>
+              <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
-            </div>
-            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
-              Database: {{ currentDatabase }}
-            </h3>
-            <p class="text-gray-500 dark:text-gray-400 mb-4">
-              {{ tables.length }} tables available
-            </p>
-            <p class="text-sm text-gray-400">
-              Select a table from the sidebar to view its structure and data
-            </p>
-          </div>
+            </template>
+          </EmptyState>
         </div>
 
         <!-- Table Content -->
         <div v-else class="h-full p-6">
           <div v-if="currentView === 'data'" class="h-full">
-            <!-- Data view component will go here -->
             <div class="card h-full">
               <h3 class="text-lg font-semibold mb-4">Table Data: {{ currentTable }}</h3>
-              <p class="text-gray-500">Data table component will be implemented here</p>
+              <p class="text-gray-500">Data will be loaded here...</p>
             </div>
           </div>
           
           <div v-else-if="currentView === 'structure'" class="h-full">
-            <!-- Structure view component will go here -->
             <div class="card h-full">
               <h3 class="text-lg font-semibold mb-4">Table Structure: {{ currentTable }}</h3>
-              <p class="text-gray-500">Table structure component will be implemented here</p>
+              <p class="text-gray-500">Table structure will be loaded here...</p>
             </div>
           </div>
         </div>
@@ -191,68 +181,77 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useDatabase } from '@/composables/useDatabase'
-import { formatConnectionString } from '@/utils/formatters'
+import { useRouter } from 'vue-router'
 import { useConnectionStore } from '@/stores/connection'
-import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
+import { useUIStore } from '@/stores/ui'
+import EmptyState from '@/components/ui/EmptyState.vue'
 
-const route = useRoute()
 const router = useRouter()
 const connectionStore = useConnectionStore()
+const uiStore = useUIStore()
 
-const {
-  currentDatabase,
-  tables,
-  currentTable,
-  loading,
-  databases,
-  selectDatabase,
-  loadTableStructure,
-  loadTableData,
-  refreshDatabases,
-  refreshTables
-} = useDatabase()
-
-// Local state
-const tablesLoading = ref(false)
+// State
+const currentDatabase = ref('')
+const currentTable = ref('')
 const currentView = ref<'data' | 'structure'>('data')
+const loading = ref(false)
+const tablesLoading = ref(false)
 
 // Computed
-const connectionInfo = computed(() => {
-  if (connectionStore.currentConnection) {
-    return formatConnectionString(connectionStore.currentConnection)
-  }
-  return 'Not connected'
-})
+const isConnected = computed(() => connectionStore.isConnected)
+const currentConnection = computed(() => connectionStore.currentConnection)
+const databases = computed(() => connectionStore.databases)
+const tables = computed(() => connectionStore.tables)
 
 const pageTitle = computed(() => {
-  if (currentTable.value) {
-    return `Table: ${currentTable.value}`
-  }
-  if (currentDatabase.value) {
-    return `Database: ${currentDatabase.value}`
-  }
-  return 'Database Explorer'
+  if (!currentDatabase.value) return 'Database Explorer'
+  if (!currentTable.value) return `Database: ${currentDatabase.value}`
+  return `Table: ${currentTable.value}`
 })
 
 // Methods
 function getTableName(table: any): string {
-  // Handle different table object formats
-  return table.name || 
-         table[`Tables_in_${currentDatabase.value}`] || 
-         Object.values(table)[0] as string
+  if (typeof table === 'string') return table
+  if (table.name) return table.name
+  // Handle different MySQL table object formats
+  const keys = Object.keys(table)
+  const tableKey = keys.find(key => key.startsWith('Tables_in_'))
+  return tableKey ? table[tableKey] : 'Unknown'
 }
 
-async function selectTable(tableName: string) {
+async function refreshDatabases() {
+  loading.value = true
+  try {
+    await connectionStore.loadDatabases()
+  } catch (error) {
+    uiStore.showToast('Failed to load databases', 'error')
+  } finally {
+    loading.value = false
+  }
+}
+
+async function refreshTables() {
+  if (!currentDatabase.value) return
+  
+  tablesLoading.value = true
+  try {
+    await connectionStore.loadTables(currentDatabase.value)
+  } catch (error) {
+    uiStore.showToast('Failed to load tables', 'error')
+  } finally {
+    tablesLoading.value = false
+  }
+}
+
+async function selectDatabase(database: string) {
+  currentDatabase.value = database
+  currentTable.value = ''
+  await refreshTables()
+}
+
+function selectTable(tableName: string) {
   currentTable.value = tableName
   currentView.value = 'data'
-  
-  // Load table structure and data
-  await Promise.all([
-    loadTableStructure(tableName),
-    loadTableData(tableName)
-  ])
 }
 
 function viewTableStructure() {
@@ -265,37 +264,23 @@ function viewTableData() {
 
 // Initialize
 onMounted(async () => {
-  // Check if connected
-  if (!connectionStore.isConnected) {
+  if (!isConnected.value) {
     router.push('/')
     return
   }
-
-  // Load databases
+  
   await refreshDatabases()
-
-  // If database specified in route, select it
-  const databaseName = route.params.name as string
-  if (databaseName && databases.value.some(db => db.Database === databaseName)) {
-    await selectDatabase(databaseName)
-  }
 })
 </script>
 
 <style scoped>
-.database-item {
+.database-item,
+.table-item {
   @apply p-3 rounded-lg cursor-pointer transition-colors hover:bg-gray-100 dark:hover:bg-gray-700;
 }
 
-.database-item.active {
-  @apply bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300;
-}
-
-.table-item {
-  @apply p-2 rounded cursor-pointer transition-colors hover:bg-gray-100 dark:hover:bg-gray-700;
-}
-
+.database-item.active,
 .table-item.active {
-  @apply bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300;
+  @apply bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300;
 }
 </style> 
