@@ -1,209 +1,280 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-    <div class="max-w-4xl mx-auto px-4">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Header -->
-      <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+      <div class="text-center mb-12">
+        <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
           Database Connection
         </h1>
-        <p class="text-gray-600 dark:text-gray-300">
-          Connect to your MySQL database to start managing your data
+        <p class="text-lg text-gray-600 dark:text-gray-300">
+          Connect to your MySQL database to start exploring and visualizing your data
         </p>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Connection Form -->
-        <div class="card">
-          <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-            New Connection
-          </h2>
-          
-          <form @submit.prevent="handleConnect" class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Host
-              </label>
-              <input
-                v-model="connectionForm.host"
-                type="text"
-                placeholder="localhost"
-                class="input-field"
-                required
-              />
+        <div class="lg:col-span-2">
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M4 7v10c0 2.21 3.79 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.79 4 8 4s8-1.79 8-4M4 7c0-2.21 3.79-4 8-4s8 1.79 8 4" />
+                </svg>
+                New Connection
+              </h2>
             </div>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Port
-              </label>
-              <input
-                v-model.number="connectionForm.port"
-                type="number"
-                placeholder="3306"
-                min="1"
-                max="65535"
-                class="input-field"
-                required
-              />
-            </div>
+            <form @submit.prevent="handleConnect" class="p-6 space-y-6">
+              <!-- Connection Name -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Connection Name (Optional)
+                </label>
+                <input
+                  v-model="connectionForm.name"
+                  type="text"
+                  placeholder="My Database"
+                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
+                         bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                         focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                         placeholder-gray-400 dark:placeholder-gray-500"
+                />
+              </div>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Username
-              </label>
-              <input
-                v-model="connectionForm.user"
-                type="text"
-                placeholder="root"
-                class="input-field"
-                required
-              />
-            </div>
+              <!-- Host and Port -->
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="md:col-span-3">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Host *
+                  </label>
+                  <input
+                    v-model="connectionForm.host"
+                    type="text"
+                    required
+                    placeholder="localhost"
+                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
+                           bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                           focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                           placeholder-gray-400 dark:placeholder-gray-500"
+                  />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Port *
+                  </label>
+                  <input
+                    v-model.number="connectionForm.port"
+                    type="number"
+                    required
+                    placeholder="3306"
+                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
+                           bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                           focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                           placeholder-gray-400 dark:placeholder-gray-500"
+                  />
+                </div>
+              </div>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Password
-              </label>
-              <input
-                v-model="connectionForm.password"
-                type="password"
-                placeholder="••••••••"
-                class="input-field"
-                required
-              />
-            </div>
+              <!-- Username and Password -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Username *
+                  </label>
+                  <input
+                    v-model="connectionForm.user"
+                    type="text"
+                    required
+                    placeholder="root"
+                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
+                           bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                           focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                           placeholder-gray-400 dark:placeholder-gray-500"
+                  />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Password
+                  </label>
+                  <div class="relative">
+                    <input
+                      v-model="connectionForm.password"
+                      :type="showPassword ? 'text' : 'password'"
+                      placeholder="••••••••"
+                      class="w-full px-4 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg 
+                             bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                             focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                             placeholder-gray-400 dark:placeholder-gray-500"
+                    />
+                    <button
+                      type="button"
+                      @click="showPassword = !showPassword"
+                      class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                    >
+                      <svg v-if="showPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                      </svg>
+                      <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Database (Optional)
-              </label>
-              <input
-                v-model="connectionForm.database"
-                type="text"
-                placeholder="Database name"
-                class="input-field"
-              />
-            </div>
+              <!-- Database -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Database (Optional)
+                </label>
+                <input
+                  v-model="connectionForm.database"
+                  type="text"
+                  placeholder="my_database"
+                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
+                         bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                         focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                         placeholder-gray-400 dark:placeholder-gray-500"
+                />
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Leave empty to connect without selecting a specific database
+                </p>
+              </div>
 
-            <div class="flex gap-3 pt-4">
-              <button
-                type="button"
-                @click="testConnection"
-                :disabled="isTestingConnection"
-                class="btn-secondary flex-1"
-              >
-                <span v-if="isTestingConnection" class="flex items-center justify-center">
-                  <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
-                  Testing...
-                </span>
-                <span v-else>Test Connection</span>
-              </button>
-              
-              <button
-                type="submit"
-                :disabled="isConnecting || !isFormValid"
-                class="btn-primary flex-1"
-              >
-                <span v-if="isConnecting" class="flex items-center justify-center">
-                  <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Connecting...
-                </span>
-                <span v-else>Connect</span>
-              </button>
-            </div>
-          </form>
+              <!-- Actions -->
+              <div class="flex space-x-4 pt-4">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  @click="handleTest"
+                  :loading="database.isConnecting"
+                  :disabled="!isFormValid"
+                >
+                  Test Connection
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  :loading="database.isConnecting"
+                  :disabled="!isFormValid"
+                  class="flex-1"
+                >
+                  Connect
+                </Button>
+              </div>
+            </form>
+          </div>
         </div>
 
-        <!-- Connection History -->
-        <div class="card">
-          <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-            Recent Connections
-          </h2>
-          
-          <div v-if="connectionHistory.length === 0" class="text-center py-8">
-            <div class="text-gray-400 mb-2">
-              <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-              </svg>
-            </div>
-            <p class="text-gray-500 dark:text-gray-400 text-sm">
-              No recent connections
-            </p>
-          </div>
-
-          <div v-else class="space-y-3">
-            <div
-              v-for="connection in connectionHistory"
-              :key="`${connection.host}-${connection.port}-${connection.user}`"
-              class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
-              @click="loadConnection(connection)"
-            >
-              <div class="flex items-center justify-between">
-                <div>
-                  <h3 class="font-medium text-gray-900 dark:text-white">
-                    {{ connection.user }}@{{ connection.host }}:{{ connection.port }}
-                  </h3>
-                  <p v-if="connection.database" class="text-sm text-gray-500 dark:text-gray-400">
-                    Database: {{ connection.database }}
-                  </p>
-                </div>
-                <button
-                  @click.stop="removeFromHistory(connection)"
-                  class="text-gray-400 hover:text-red-500 transition-colors"
-                >
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        <!-- Sidebar -->
+        <div class="space-y-8">
+          <!-- Connection History -->
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center justify-between">
+                <span class="flex items-center">
+                  <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                </button>
+                  Recent Connections
+                </span>
+                <Button
+                  v-if="connectionStore.connectionHistory.length > 0"
+                  variant="ghost"
+                  size="sm"
+                  @click="connectionStore.clearHistory"
+                  class="text-red-500 hover:text-red-600"
+                >
+                  Clear
+                </Button>
+              </h3>
+            </div>
+            <div class="p-4">
+              <div v-if="connectionStore.connectionHistory.length === 0" 
+                   class="text-center py-8 text-gray-500 dark:text-gray-400">
+                <svg class="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p>No recent connections</p>
+              </div>
+              <div v-else class="space-y-2">
+                <div
+                  v-for="connection in connectionStore.connectionHistory"
+                  :key="`${connection.host}-${connection.port}-${connection.user}`"
+                  class="p-3 border border-gray-200 dark:border-gray-600 rounded-lg 
+                         hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer
+                         transition-colors duration-200 group"
+                  @click="loadConnection(connection)"
+                >
+                  <div class="flex items-center justify-between">
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        {{ connectionStore.getConnectionName(connection) }}
+                      </p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        {{ connection.user }}@{{ connection.host }}:{{ connection.port }}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      @click.stop="connectionStore.removeFromHistory(connection)"
+                      class="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-red-500 hover:text-red-600"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Connection Tips -->
-      <div class="mt-8 card">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Connection Tips
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-          <div class="flex items-start space-x-3">
-            <div class="flex-shrink-0 mt-1">
-              <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
-            </div>
-            <div>
-              <p class="font-medium text-gray-900 dark:text-white">Default MySQL Port</p>
-              <p class="text-gray-600 dark:text-gray-300">The standard MySQL port is 3306</p>
-            </div>
-          </div>
-          
-          <div class="flex items-start space-x-3">
-            <div class="flex-shrink-0 mt-1">
-              <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-            </div>
-            <div>
-              <p class="font-medium text-gray-900 dark:text-white">Local Development</p>
-              <p class="text-gray-600 dark:text-gray-300">Use 'localhost' or '127.0.0.1' for local databases</p>
-            </div>
-          </div>
-          
-          <div class="flex items-start space-x-3">
-            <div class="flex-shrink-0 mt-1">
-              <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
-            </div>
-            <div>
-              <p class="font-medium text-gray-900 dark:text-white">Test First</p>
-              <p class="text-gray-600 dark:text-gray-300">Always test your connection before connecting</p>
-            </div>
-          </div>
-          
-          <div class="flex items-start space-x-3">
-            <div class="flex-shrink-0 mt-1">
-              <div class="w-2 h-2 bg-purple-500 rounded-full"></div>
-            </div>
-            <div>
-              <p class="font-medium text-gray-900 dark:text-white">Security</p>
-              <p class="text-gray-600 dark:text-gray-300">Use strong passwords and secure connections</p>
+          <!-- Tips -->
+          <div class="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 
+                      rounded-xl border border-primary-200 dark:border-primary-700">
+            <div class="p-4">
+              <h3 class="text-lg font-semibold text-primary-900 dark:text-primary-100 mb-3 flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Connection Tips
+              </h3>
+              <div class="space-y-3 text-sm text-primary-800 dark:text-primary-200">
+                <div class="flex items-start">
+                  <svg class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                  </svg>
+                  <span>Ensure your MySQL server is running and accessible</span>
+                </div>
+                <div class="flex items-start">
+                  <svg class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                  </svg>
+                  <span>Use 'Test Connection' to verify settings before connecting</span>
+                </div>
+                <div class="flex items-start">
+                  <svg class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                  </svg>
+                  <span>Default MySQL port is 3306</span>
+                </div>
+                <div class="flex items-start">
+                  <svg class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                  </svg>
+                  <span>Recent connections are saved for quick access</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -215,23 +286,17 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useDatabase } from '@/composables/useDatabase'
 import { useConnectionStore } from '@/stores/connection'
-import { useUIStore } from '@/stores/ui'
-
-interface DatabaseConfig {
-  host: string
-  port: number
-  user: string
-  password: string
-  database?: string
-}
+import Button from '@/components/ui/Button.vue'
 
 const router = useRouter()
+const database = useDatabase()
 const connectionStore = useConnectionStore()
-const uiStore = useUIStore()
 
 // Form state
-const connectionForm = ref<DatabaseConfig>({
+const connectionForm = ref({
+  name: '',
   host: 'localhost',
   port: 3306,
   user: 'root',
@@ -239,68 +304,53 @@ const connectionForm = ref<DatabaseConfig>({
   database: ''
 })
 
-const isTestingConnection = ref(false)
-const isConnecting = ref(false)
+const showPassword = ref(false)
 
 // Computed
 const isFormValid = computed(() => {
-  return connectionForm.value.host &&
-         connectionForm.value.port &&
-         connectionForm.value.user &&
-         connectionForm.value.password
+  return connectionForm.value.host && 
+         connectionForm.value.port && 
+         connectionForm.value.user
 })
 
-const connectionHistory = computed(() => connectionStore.connectionHistory)
-
 // Methods
-async function testConnection() {
-  if (!isFormValid.value) return
-
-  isTestingConnection.value = true
-  
-  try {
-    const result = await connectionStore.testConnection(connectionForm.value)
-    
-    if (result.success) {
-      uiStore.showToast('Connection test successful!', 'success')
-    } else {
-      uiStore.showToast(`Connection failed: ${result.message}`, 'error')
-    }
-  } catch (error) {
-    uiStore.showToast(`Test failed: ${error}`, 'error')
-  } finally {
-    isTestingConnection.value = false
+async function handleTest() {
+  const config = {
+    host: connectionForm.value.host,
+    port: connectionForm.value.port,
+    user: connectionForm.value.user,
+    password: connectionForm.value.password,
+    database: connectionForm.value.database || undefined
   }
+
+  await database.testConnection(config)
 }
 
 async function handleConnect() {
-  if (!isFormValid.value) return
+  const config = {
+    host: connectionForm.value.host,
+    port: connectionForm.value.port,
+    user: connectionForm.value.user,
+    password: connectionForm.value.password,
+    database: connectionForm.value.database || undefined
+  }
 
-  isConnecting.value = true
-  uiStore.setLoading(true, 'Connecting to database...')
-
-  try {
-    const result = await connectionStore.connect(connectionForm.value)
-    
-    if (result.success) {
-      uiStore.showToast('Successfully connected to database!', 'success')
-      router.push('/database')
-    } else {
-      uiStore.showToast(`Connection failed: ${result.message}`, 'error')
-    }
-  } catch (error) {
-    uiStore.showToast(`Connection error: ${error}`, 'error')
-  } finally {
-    isConnecting.value = false
-    uiStore.setLoading(false)
+  const success = await database.connect(config)
+  
+  if (success) {
+    // Navigate to database view
+    router.push('/database')
   }
 }
 
-function loadConnection(connection: DatabaseConfig) {
-  connectionForm.value = { ...connection }
-}
-
-function removeFromHistory(connection: DatabaseConfig) {
-  connectionStore.removeFromHistory(connection)
+function loadConnection(connection: any) {
+  connectionForm.value = {
+    name: '',
+    host: connection.host,
+    port: connection.port,
+    user: connection.user,
+    password: '', // Don't auto-fill password for security
+    database: connection.database || ''
+  }
 }
 </script> 

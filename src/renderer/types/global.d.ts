@@ -8,11 +8,30 @@ export interface DatabaseConfig {
   database?: string
 }
 
-export interface DatabaseResponse {
+export interface DatabaseResult {
   success: boolean
-  message?: string
+  message: string
   data?: any[]
   fields?: Array<{ name: string; type: string }>
+}
+
+export interface ElectronAPI {
+  database: {
+    testConnection: (config: DatabaseConfig) => Promise<DatabaseResult>
+    connect: (config: DatabaseConfig) => Promise<DatabaseResult>
+    disconnect: () => Promise<DatabaseResult>
+    getDatabases: () => Promise<DatabaseResult>
+    getTables: (database: string) => Promise<DatabaseResult>
+    getTableStructure: (database: string, table: string) => Promise<DatabaseResult>
+    getTableData: (database: string, table: string, limit?: number, offset?: number) => Promise<DatabaseResult>
+    executeQuery: (query: string) => Promise<DatabaseResult>
+    ping: () => Promise<DatabaseResult>
+  }
+  ipcRenderer: {
+    invoke: (channel: string, ...args: any[]) => Promise<any>
+    on: (channel: string, listener: (event: any, ...args: any[]) => void) => void
+    removeAllListeners: (channel: string) => void
+  }
 }
 
 export interface Database {
@@ -27,15 +46,16 @@ export interface Table {
 // Electron API definitions
 declare global {
   interface Window {
+    electronAPI: ElectronAPI
     dbAPI: {
-      testConnection: (config: DatabaseConfig) => Promise<DatabaseResponse>
-      connect: (config: DatabaseConfig) => Promise<DatabaseResponse>
-      disconnect: () => Promise<void>
-      getDatabases: () => Promise<DatabaseResponse>
-      getTables: (database: string) => Promise<DatabaseResponse>
-      executeQuery: (query: string) => Promise<DatabaseResponse>
-      getTableStructure: (database: string, table: string) => Promise<DatabaseResponse>
-      getTableData: (database: string, table: string, limit?: number, offset?: number) => Promise<DatabaseResponse>
+      testConnection: (config: DatabaseConfig) => Promise<DatabaseResult>
+      connect: (config: DatabaseConfig) => Promise<DatabaseResult>
+      disconnect: () => Promise<DatabaseResult>
+      getDatabases: () => Promise<DatabaseResult>
+      getTables: (database: string) => Promise<DatabaseResult>
+      executeQuery: (query: string) => Promise<DatabaseResult>
+      getTableStructure: (database: string, table: string) => Promise<DatabaseResult>
+      getTableData: (database: string, table: string, limit?: number, offset?: number) => Promise<DatabaseResult>
     }
     appAPI: {
       getVersion: () => string

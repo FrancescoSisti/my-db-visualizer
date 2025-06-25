@@ -3,152 +3,133 @@ import { ref } from 'vue'
 
 export interface Toast {
   id: string
+  title: string
   message: string
   type: 'success' | 'error' | 'warning' | 'info'
   duration?: number
+  actions?: Array<{
+    label: string
+    action: () => void
+  }>
+}
+
+export interface ToastOptions {
+  title: string
+  message: string
+  type: 'success' | 'error' | 'warning' | 'info'
+  duration?: number
+  actions?: Array<{
+    label: string
+    action: () => void
+  }>
 }
 
 export const useUIStore = defineStore('ui', () => {
   // State
+  const isDarkMode = ref(false)
+  const sidebarCollapsed = ref(false)
   const isLoading = ref(false)
   const loadingMessage = ref('')
   const toasts = ref<Toast[]>([])
-  const isDarkMode = ref(false)
-  const sidebarCollapsed = ref(false)
 
   // Actions
-  function setLoading(loading: boolean, message = '') {
-    isLoading.value = loading
-    loadingMessage.value = message
-  }
-
-  function showToast(message: string, type: Toast['type'] = 'info', duration = 5000) {
-    const id = Date.now().toString()
-    const toast: Toast = {
-      id,
-      message,
-      type,
-      duration
-    }
-
-    toasts.value.push(toast)
-
-    // Auto remove toast after duration
-    if (duration > 0) {
-      setTimeout(() => {
-        removeToast(id)
-      }, duration)
-    }
-
-    return id
-  }
-
-  function removeToast(id: string) {
-    const index = toasts.value.findIndex(toast => toast.id === id)
-    if (index !== -1) {
-      toasts.value.splice(index, 1)
-    }
-  }
-
-  function clearToasts() {
-    toasts.value = []
-  }
-
   function toggleDarkMode() {
     isDarkMode.value = !isDarkMode.value
-    updateDarkModeClass()
-    saveDarkModePreference()
-  }
-
-  function setDarkMode(value: boolean) {
-    isDarkMode.value = value
-    updateDarkModeClass()
-    saveDarkModePreference()
-  }
-
-  function updateDarkModeClass() {
+    // Apply to document
     if (isDarkMode.value) {
       document.documentElement.classList.add('dark')
     } else {
       document.documentElement.classList.remove('dark')
     }
-  }
-
-  function saveDarkModePreference() {
-    localStorage.setItem('dark-mode', JSON.stringify(isDarkMode.value))
-  }
-
-  function loadDarkModePreference() {
-    try {
-      const saved = localStorage.getItem('dark-mode')
-      if (saved !== null) {
-        isDarkMode.value = JSON.parse(saved)
-      } else {
-        // Default to system preference
-        isDarkMode.value = window.matchMedia('(prefers-color-scheme: dark)').matches
-      }
-    } catch (error) {
-      // Default to light mode if error
-      isDarkMode.value = false
-    }
-  }
-
-  function initializeDarkMode() {
-    loadDarkModePreference()
-    updateDarkModeClass()
-
-    // Listen for system theme changes
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-    mediaQuery.addEventListener('change', (e) => {
-      // Only update if user hasn't manually set preference
-      const savedPreference = localStorage.getItem('dark-mode')
-      if (savedPreference === null) {
-        setDarkMode(e.matches)
-      }
-    })
+    // Save to localStorage
+    localStorage.setItem('theme', isDarkMode.value ? 'dark' : 'light')
   }
 
   function toggleSidebar() {
     sidebarCollapsed.value = !sidebarCollapsed.value
-    localStorage.setItem('sidebar-collapsed', JSON.stringify(sidebarCollapsed.value))
+    localStorage.setItem('sidebar-collapsed', sidebarCollapsed.value.toString())
   }
 
-  function setSidebarCollapsed(collapsed: boolean) {
-    sidebarCollapsed.value = collapsed
-    localStorage.setItem('sidebar-collapsed', JSON.stringify(collapsed))
+  function setLoading(loading: boolean, message?: string) {
+    isLoading.value = loading
+    loadingMessage.value = message || ''
   }
 
-  function loadSidebarState() {
-    try {
-      const saved = localStorage.getItem('sidebar-collapsed')
-      if (saved !== null) {
-        sidebarCollapsed.value = JSON.parse(saved)
+  function showToast(options: ToastOptions | string, type?: 'success' | 'error' | 'warning' | 'info') {
+    let toastOptions: ToastOptions
+
+    if (typeof options === 'string') {
+      // Backward compatibility
+      toastOptions = {
+        title: type === 'error' ? 'Error' : type === 'success' ? 'Success' : 'Info',
+        message: options,
+        type: type || 'info'
       }
-    } catch (error) {
-      sidebarCollapsed.value = false
+    } else {
+      toastOptions = options
+    }
+
+    const toast: Toast = {
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      ...toastOptions,
+      duration: toastOptions.duration || 5000
+    }
+
+    toasts.value.push(toast)
+
+    // Auto remove after duration
+    setTimeout(() => {
+      removeToast(toast.id)
+    }, toast.duration)
+  }
+
+  function removeToast(id: string) {
+    const index = toasts.value.findIndex(toast => toast.id === id)
+    if (index > -1) {
+      toasts.value.splice(index, 1)
     }
   }
 
-  // Initialize sidebar state
-  loadSidebarState()
+  function clearAllToasts() {
+    toasts.value = []
+  }
+
+  // Initialize theme from localStorage
+  function initializeTheme() {
+    const savedTheme = localStorage.getItem('theme')
+    const savedSidebar = localStorage.getItem('sidebar-collapsed')
+    
+    if (savedTheme === 'dark') {
+      isDarkMode.value = true
+      document.documentElement.classList.add('dark')
+    } else {
+      isDarkMode.value = false
+      document.documentElement.classList.remove('dark')
+    }
+
+    if (savedSidebar === 'true') {
+      sidebarCollapsed.value = true
+    }
+  }
+
+  // Initialize on store creation
+  initializeTheme()
 
   return {
     // State
+    isDarkMode,
+    sidebarCollapsed,
     isLoading,
     loadingMessage,
     toasts,
-    isDarkMode,
-    sidebarCollapsed,
 
     // Actions
+    toggleDarkMode,
+    toggleSidebar,
     setLoading,
     showToast,
     removeToast,
-    clearToasts,
-    toggleDarkMode,
-    setDarkMode,
-    initializeDarkMode,
-    toggleSidebar,
-    setSidebarCollapsed
+    clearAllToasts,
+    initializeTheme
   }
 }) 

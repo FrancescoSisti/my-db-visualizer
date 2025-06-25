@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { DatabaseConfig, DatabaseResponse, Database, Table } from '@/types/global'
+import type { DatabaseConfig, DatabaseResult, Database, Table } from '@/types/global'
 
 export const useConnectionStore = defineStore('connection', () => {
   // State
@@ -9,12 +9,13 @@ export const useConnectionStore = defineStore('connection', () => {
   const tables = ref<Table[]>([])
   const selectedDatabase = ref<string>('')
   const connectionHistory = ref<DatabaseConfig[]>([])
+  const isConnected = ref(false)
 
   // Computed
-  const isConnected = computed(() => currentConnection.value !== null)
+  const hasActiveConnection = computed(() => isConnected.value && currentConnection.value !== null)
 
   // Actions
-  async function testConnection(config: DatabaseConfig): Promise<DatabaseResponse> {
+  async function testConnection(config: DatabaseConfig): Promise<DatabaseResult> {
     try {
       const result = await window.dbAPI.testConnection(config)
       return result
@@ -26,7 +27,7 @@ export const useConnectionStore = defineStore('connection', () => {
     }
   }
 
-  async function connect(config: DatabaseConfig): Promise<DatabaseResponse> {
+  async function connect(config: DatabaseConfig): Promise<DatabaseResult> {
     try {
       const result = await window.dbAPI.connect(config)
       
@@ -50,10 +51,11 @@ export const useConnectionStore = defineStore('connection', () => {
     databases.value = []
     tables.value = []
     selectedDatabase.value = ''
+    isConnected.value = false
   }
 
   async function loadDatabases(): Promise<void> {
-    if (!isConnected.value) return
+    if (!hasActiveConnection.value) return
 
     try {
       const result = await window.dbAPI.getDatabases()
@@ -66,7 +68,7 @@ export const useConnectionStore = defineStore('connection', () => {
   }
 
   async function loadTables(database: string): Promise<void> {
-    if (!isConnected.value) return
+    if (!hasActiveConnection.value) return
 
     try {
       const result = await window.dbAPI.getTables(database)
@@ -79,8 +81,8 @@ export const useConnectionStore = defineStore('connection', () => {
     }
   }
 
-  async function executeQuery(query: string): Promise<DatabaseResponse> {
-    if (!isConnected.value) {
+  async function executeQuery(query: string): Promise<DatabaseResult> {
+    if (!hasActiveConnection.value) {
       return {
         success: false,
         message: 'No database connection'
@@ -97,50 +99,72 @@ export const useConnectionStore = defineStore('connection', () => {
     }
   }
 
-  function addToHistory(config: DatabaseConfig): void {
-    const existingIndex = connectionHistory.value.findIndex(
-      conn => conn.host === config.host && 
-              conn.port === config.port && 
-              conn.user === config.user
-    )
+  function setConnection(config: DatabaseConfig) {
+    currentConnection.value = config
+    isConnected.value = true
+    addToHistory(config)
+  }
 
+  function addToHistory(config: DatabaseConfig) {
+    // Remove existing entry if exists (avoid duplicates)
+    const existingIndex = connectionHistory.value.findIndex(
+      item => item.host === config.host && 
+              item.port === config.port && 
+              item.user === config.user &&
+              item.database === config.database
+    )
+    
     if (existingIndex !== -1) {
       connectionHistory.value.splice(existingIndex, 1)
     }
-
-    connectionHistory.value.unshift(config)
+    
+    // Add to beginning of array
+    connectionHistory.value.unshift({ ...config })
     
     // Keep only last 10 connections
     if (connectionHistory.value.length > 10) {
       connectionHistory.value = connectionHistory.value.slice(0, 10)
     }
-
+    
     // Save to localStorage
-    localStorage.setItem('db-connection-history', JSON.stringify(connectionHistory.value))
+    localStorage.setItem('db_connection_history', JSON.stringify(connectionHistory.value))
   }
 
-  function loadHistory(): void {
+  function removeFromHistory(config: DatabaseConfig) {
+    const index = connectionHistory.value.findIndex(
+      item => item.host === config.host && 
+              item.port === config.port && 
+              item.user === config.user &&
+              item.database === config.database
+    )
+    
+    if (index !== -1) {
+      connectionHistory.value.splice(index, 1)
+      localStorage.setItem('db_connection_history', JSON.stringify(connectionHistory.value))
+    }
+  }
+
+  function clearHistory() {
+    connectionHistory.value = []
+    localStorage.removeItem('db_connection_history')
+  }
+
+  function loadHistory() {
     try {
-      const saved = localStorage.getItem('db-connection-history')
-      if (saved) {
-        connectionHistory.value = JSON.parse(saved)
+      const stored = localStorage.getItem('db_connection_history')
+      if (stored) {
+        connectionHistory.value = JSON.parse(stored)
       }
     } catch (error) {
       console.error('Failed to load connection history:', error)
+      connectionHistory.value = []
     }
   }
 
-  function removeFromHistory(config: DatabaseConfig): void {
-    const index = connectionHistory.value.findIndex(
-      conn => conn.host === config.host && 
-              conn.port === config.port && 
-              conn.user === config.user
-    )
-
-    if (index !== -1) {
-      connectionHistory.value.splice(index, 1)
-      localStorage.setItem('db-connection-history', JSON.stringify(connectionHistory.value))
-    }
+  function getConnectionName(config: DatabaseConfig): string {
+    return config.database 
+      ? `${config.database}@${config.host}:${config.port}`
+      : `${config.host}:${config.port}`
   }
 
   // Initialize
@@ -153,9 +177,10 @@ export const useConnectionStore = defineStore('connection', () => {
     tables,
     selectedDatabase,
     connectionHistory,
+    isConnected,
     
     // Computed
-    isConnected,
+    hasActiveConnection,
     
     // Actions
     testConnection,
@@ -165,7 +190,9 @@ export const useConnectionStore = defineStore('connection', () => {
     loadTables,
     executeQuery,
     addToHistory,
+    removeFromHistory,
+    clearHistory,
     loadHistory,
-    removeFromHistory
+    getConnectionName
   }
 }) 

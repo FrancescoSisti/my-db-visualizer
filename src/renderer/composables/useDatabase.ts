@@ -1,237 +1,363 @@
 import { ref, computed } from 'vue'
 import { useConnectionStore } from '@/stores/connection'
 import { useUIStore } from '@/stores/ui'
-import type { TableInfo, ColumnInfo, TableData } from '@/types/database'
+
+export interface DatabaseConnection {
+  host: string
+  port: number
+  user: string
+  password: string
+  database?: string
+}
+
+export interface DatabaseInfo {
+  name: string
+  tables: TableInfo[]
+}
+
+export interface TableInfo {
+  name: string
+  rows: number
+  size: string
+  engine: string
+  collation: string
+}
+
+export interface TableColumn {
+  Field: string
+  Type: string
+  Null: 'YES' | 'NO'
+  Key: 'PRI' | 'UNI' | 'MUL' | ''
+  Default: string | null
+  Extra: string
+}
+
+export interface QueryResult {
+  data: any[]
+  fields: Array<{ name: string; type: string }>
+  affectedRows?: number
+  executionTime?: number
+}
 
 export function useDatabase() {
   const connectionStore = useConnectionStore()
   const uiStore = useUIStore()
-
+  
+  const isConnecting = ref(false)
+  const isExecuting = ref(false)
+  const databases = ref<string[]>([])
   const currentDatabase = ref<string>('')
   const tables = ref<TableInfo[]>([])
   const currentTable = ref<string>('')
-  const tableColumns = ref<ColumnInfo[]>([])
-  const tableData = ref<TableData | null>(null)
-  const loading = ref(false)
 
-  // Computed
-  const isConnected = computed(() => connectionStore.isConnected)
-  const databases = computed(() => connectionStore.databases)
-
-  // Actions
-  async function selectDatabase(database: string) {
-    if (!isConnected.value) {
-      uiStore.showToast('Not connected to database', 'error')
-      return
-    }
-
+  // Test database connection
+  async function testConnection(config: DatabaseConnection): Promise<{ success: boolean; message: string }> {
     try {
-      loading.value = true
-      currentDatabase.value = database
+      isConnecting.value = true
+      const result = await window.electronAPI.database.testConnection(config)
       
-      await connectionStore.loadTables(database)
-      tables.value = connectionStore.tables as TableInfo[]
-      
-      uiStore.showToast(`Connected to database: ${database}`, 'success')
-    } catch (error) {
-      uiStore.showToast(`Failed to select database: ${error}`, 'error')
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function loadTableStructure(tableName: string) {
-    if (!isConnected.value || !currentDatabase.value) return
-
-    try {
-      loading.value = true
-      currentTable.value = tableName
-
-      const query = `DESCRIBE \`${currentDatabase.value}\`.\`${tableName}\``
-      const result = await connectionStore.executeQuery(query)
-
-      if (result.success && result.data) {
-        tableColumns.value = result.data as ColumnInfo[]
+      if (result.success) {
+        uiStore.showToast({
+          title: 'Connection successful',
+          message: 'Database connection established successfully',
+          type: 'success'
+        })
+      } else {
+        uiStore.showToast({
+          title: 'Connection failed',
+          message: result.message,
+          type: 'error'
+        })
       }
+      
+      return result
     } catch (error) {
-      uiStore.showToast(`Failed to load table structure: ${error}`, 'error')
+      const message = error instanceof Error ? error.message : 'Unknown error occurred'
+      uiStore.showToast({
+        title: 'Connection error',
+        message,
+        type: 'error'
+      })
+      return { success: false, message }
     } finally {
-      loading.value = false
+      isConnecting.value = false
     }
   }
 
-  async function loadTableData(tableName: string, limit = 100, offset = 0) {
-    if (!isConnected.value || !currentDatabase.value) return
-
+  // Connect to database
+  async function connect(config: DatabaseConnection): Promise<boolean> {
     try {
-      loading.value = true
+      isConnecting.value = true
+      const result = await window.electronAPI.database.connect(config)
       
-      const countQuery = `SELECT COUNT(*) as total FROM \`${currentDatabase.value}\`.\`${tableName}\``
-      const countResult = await connectionStore.executeQuery(countQuery)
-      
-      const dataQuery = `SELECT * FROM \`${currentDatabase.value}\`.\`${tableName}\` LIMIT ${limit} OFFSET ${offset}`
-      const dataResult = await connectionStore.executeQuery(dataQuery)
-
-      if (countResult.success && dataResult.success) {
-        const totalRows = countResult.data?.[0]?.total || 0
+      if (result.success) {
+        connectionStore.setConnection(config)
+        await loadDatabases()
         
-        tableData.value = {
-          columns: dataResult.fields?.map(field => field.name) || [],
-          rows: dataResult.data || [],
-          totalRows,
-          offset,
-          limit
+        uiStore.showToast({
+          title: 'Connected',
+          message: 'Successfully connected to database',
+          type: 'success'
+        })
+        
+        return true
+      } else {
+        uiStore.showToast({
+          title: 'Connection failed',
+          message: result.message,
+          type: 'error'
+        })
+        return false
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error occurred'
+      uiStore.showToast({
+        title: 'Connection error',
+        message,
+        type: 'error'
+      })
+      return false
+    } finally {
+      isConnecting.value = false
+    }
+  }
+
+  // Disconnect from database
+  async function disconnect(): Promise<void> {
+    try {
+      await window.electronAPI.database.disconnect()
+      connectionStore.clearConnection()
+      databases.value = []
+      tables.value = []
+      currentDatabase.value = ''
+      currentTable.value = ''
+      
+      uiStore.showToast({
+        title: 'Disconnected',
+        message: 'Database connection closed',
+        type: 'info'
+      })
+    } catch (error) {
+      console.error('Failed to disconnect:', error)
+    }
+  }
+
+  // Load available databases
+  async function loadDatabases(): Promise<void> {
+    try {
+      const result = await window.electronAPI.database.getDatabases()
+      if (result.success) {
+        databases.value = result.data.map((row: any) => Object.values(row)[0])
+      }
+    } catch (error) {
+      console.error('Failed to load databases:', error)
+      uiStore.showToast({
+        title: 'Error',
+        message: 'Failed to load databases',
+        type: 'error'
+      })
+    }
+  }
+
+  // Select a database
+  async function selectDatabase(databaseName: string): Promise<void> {
+    try {
+      currentDatabase.value = databaseName
+      await loadTables(databaseName)
+      
+      uiStore.showToast({
+        title: 'Database selected',
+        message: `Now using database: ${databaseName}`,
+        type: 'success'
+      })
+    } catch (error) {
+      console.error('Failed to select database:', error)
+      uiStore.showToast({
+        title: 'Error',
+        message: 'Failed to select database',
+        type: 'error'
+      })
+    }
+  }
+
+  // Load tables from selected database
+  async function loadTables(databaseName: string): Promise<void> {
+    try {
+      const result = await window.electronAPI.database.getTables(databaseName)
+      if (result.success) {
+        // Get table info with row counts and sizes
+        const tablePromises = result.data.map(async (row: any) => {
+          const tableName = Object.values(row)[0] as string
+          try {
+            const info = await getTableInfo(databaseName, tableName)
+            return info
+          } catch (error) {
+            return {
+              name: tableName,
+              rows: 0,
+              size: '0 B',
+              engine: 'Unknown',
+              collation: 'Unknown'
+            }
+          }
+        })
+        
+        tables.value = await Promise.all(tablePromises)
+      }
+    } catch (error) {
+      console.error('Failed to load tables:', error)
+      uiStore.showToast({
+        title: 'Error',
+        message: 'Failed to load tables',
+        type: 'error'
+      })
+    }
+  }
+
+  // Get table information
+  async function getTableInfo(databaseName: string, tableName: string): Promise<TableInfo> {
+    try {
+      const query = `
+        SELECT 
+          table_rows as rows,
+          round(((data_length + index_length) / 1024 / 1024), 2) as size_mb,
+          engine,
+          table_collation as collation
+        FROM information_schema.tables 
+        WHERE table_schema = ? AND table_name = ?
+      `
+      
+      const result = await executeQuery(query, [databaseName, tableName])
+      
+      if (result.data.length > 0) {
+        const info = result.data[0]
+        return {
+          name: tableName,
+          rows: info.rows || 0,
+          size: info.size_mb ? `${info.size_mb} MB` : '0 B',
+          engine: info.engine || 'Unknown',
+          collation: info.collation || 'Unknown'
         }
       }
-    } catch (error) {
-      uiStore.showToast(`Failed to load table data: ${error}`, 'error')
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function refreshDatabases() {
-    if (!isConnected.value) return
-
-    try {
-      loading.value = true
-      await connectionStore.loadDatabases()
-    } catch (error) {
-      uiStore.showToast(`Failed to refresh databases: ${error}`, 'error')
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function refreshTables() {
-    if (!isConnected.value || !currentDatabase.value) return
-
-    try {
-      loading.value = true
-      await connectionStore.loadTables(currentDatabase.value)
-      tables.value = connectionStore.tables as TableInfo[]
-    } catch (error) {
-      uiStore.showToast(`Failed to refresh tables: ${error}`, 'error')
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function createDatabase(name: string, charset = 'utf8mb4', collation = 'utf8mb4_unicode_ci') {
-    if (!isConnected.value) return
-
-    try {
-      loading.value = true
-      const query = `CREATE DATABASE \`${name}\` CHARACTER SET ${charset} COLLATE ${collation}`
-      const result = await connectionStore.executeQuery(query)
-
-      if (result.success) {
-        await refreshDatabases()
-        uiStore.showToast(`Database '${name}' created successfully`, 'success')
-      } else {
-        throw new Error(result.message || 'Failed to create database')
+      
+      return {
+        name: tableName,
+        rows: 0,
+        size: '0 B',
+        engine: 'Unknown',
+        collation: 'Unknown'
       }
     } catch (error) {
-      uiStore.showToast(`Failed to create database: ${error}`, 'error')
-    } finally {
-      loading.value = false
+      console.error('Failed to get table info:', error)
+      return {
+        name: tableName,
+        rows: 0,
+        size: '0 B',
+        engine: 'Unknown',
+        collation: 'Unknown'
+      }
     }
   }
 
-  async function dropDatabase(name: string) {
-    if (!isConnected.value) return
-
+  // Get table structure
+  async function getTableStructure(database: string, table: string): Promise<TableColumn[]> {
     try {
-      loading.value = true
-      const query = `DROP DATABASE \`${name}\``
-      const result = await connectionStore.executeQuery(query)
+      const result = await window.electronAPI.database.getTableStructure(database, table)
+      return result.success ? result.data : []
+    } catch (error) {
+      console.error('Failed to get table structure:', error)
+      return []
+    }
+  }
 
+  // Get table data with pagination
+  async function getTableData(
+    database: string, 
+    table: string, 
+    limit: number = 100, 
+    offset: number = 0
+  ): Promise<QueryResult> {
+    try {
+      const result = await window.electronAPI.database.getTableData(database, table, limit, offset)
+      return result.success ? {
+        data: result.data,
+        fields: result.fields || []
+      } : { data: [], fields: [] }
+    } catch (error) {
+      console.error('Failed to get table data:', error)
+      return { data: [], fields: [] }
+    }
+  }
+
+  // Execute custom query
+  async function executeQuery(query: string, params?: any[]): Promise<QueryResult> {
+    try {
+      isExecuting.value = true
+      const startTime = Date.now()
+      
+      // For parameterized queries, we'll need to handle them in the main process
+      const result = await window.electronAPI.database.executeQuery(query)
+      
+      const executionTime = Date.now() - startTime
+      
       if (result.success) {
-        await refreshDatabases()
-        if (currentDatabase.value === name) {
-          currentDatabase.value = ''
-          tables.value = []
+        return {
+          data: result.data,
+          fields: result.fields || [],
+          executionTime
         }
-        uiStore.showToast(`Database '${name}' dropped successfully`, 'success')
       } else {
-        throw new Error(result.message || 'Failed to drop database')
+        throw new Error(result.message)
       }
     } catch (error) {
-      uiStore.showToast(`Failed to drop database: ${error}`, 'error')
+      const message = error instanceof Error ? error.message : 'Query execution failed'
+      uiStore.showToast({
+        title: 'Query Error',
+        message,
+        type: 'error'
+      })
+      throw error
     } finally {
-      loading.value = false
+      isExecuting.value = false
     }
   }
 
-  async function truncateTable(tableName: string) {
-    if (!isConnected.value || !currentDatabase.value) return
-
+  // Check connection status
+  async function checkConnection(): Promise<boolean> {
     try {
-      loading.value = true
-      const query = `TRUNCATE TABLE \`${currentDatabase.value}\`.\`${tableName}\``
-      const result = await connectionStore.executeQuery(query)
-
-      if (result.success) {
-        await loadTableData(tableName)
-        uiStore.showToast(`Table '${tableName}' truncated successfully`, 'success')
-      } else {
-        throw new Error(result.message || 'Failed to truncate table')
-      }
+      const result = await window.electronAPI.database.ping()
+      return result.success
     } catch (error) {
-      uiStore.showToast(`Failed to truncate table: ${error}`, 'error')
-    } finally {
-      loading.value = false
+      return false
     }
   }
 
-  async function dropTable(tableName: string) {
-    if (!isConnected.value || !currentDatabase.value) return
-
-    try {
-      loading.value = true
-      const query = `DROP TABLE \`${currentDatabase.value}\`.\`${tableName}\``
-      const result = await connectionStore.executeQuery(query)
-
-      if (result.success) {
-        await refreshTables()
-        if (currentTable.value === tableName) {
-          currentTable.value = ''
-          tableColumns.value = []
-          tableData.value = null
-        }
-        uiStore.showToast(`Table '${tableName}' dropped successfully`, 'success')
-      } else {
-        throw new Error(result.message || 'Failed to drop table')
-      }
-    } catch (error) {
-      uiStore.showToast(`Failed to drop table: ${error}`, 'error')
-    } finally {
-      loading.value = false
-    }
-  }
+  // Computed properties
+  const isConnected = computed(() => connectionStore.isConnected)
+  const currentConnection = computed(() => connectionStore.currentConnection)
 
   return {
     // State
+    isConnecting,
+    isExecuting,
+    isConnected,
+    currentConnection,
+    databases,
     currentDatabase,
     tables,
     currentTable,
-    tableColumns,
-    tableData,
-    loading,
-
-    // Computed
-    isConnected,
-    databases,
-
-    // Actions
+    
+    // Methods
+    testConnection,
+    connect,
+    disconnect,
+    loadDatabases,
     selectDatabase,
-    loadTableStructure,
-    loadTableData,
-    refreshDatabases,
-    refreshTables,
-    createDatabase,
-    dropDatabase,
-    truncateTable,
-    dropTable
+    loadTables,
+    getTableInfo,
+    getTableStructure,
+    getTableData,
+    executeQuery,
+    checkConnection
   }
 } 

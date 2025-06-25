@@ -11,8 +11,8 @@ import MainLayout from '@/components/layout/MainLayout.vue'
 
 const uiStore = useUIStore()
 
-// Initialize dark mode on mount
+// Initialize theme on mount
 onMounted(() => {
-  uiStore.initializeDarkMode()
+  uiStore.initializeTheme()
 })
 </script> 
