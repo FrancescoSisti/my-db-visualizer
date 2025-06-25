@@ -152,7 +152,7 @@
                   type="button"
                   variant="secondary"
                   @click="handleTest"
-                  :loading="database.isConnecting"
+                  :loading="isConnecting"
                   :disabled="!isFormValid"
                 >
                   Test Connection
@@ -160,7 +160,7 @@
                 <Button
                   type="submit"
                   variant="primary"
-                  :loading="database.isConnecting"
+                  :loading="isConnecting"
                   :disabled="!isFormValid"
                   class="flex-1"
                 >
@@ -312,6 +312,10 @@ const isFormValid = computed(() => {
          connectionForm.value.port && 
          connectionForm.value.user
 })
+
+// Fix per gli spinner: computed properties per i valori boolean
+const isConnecting = computed(() => database.isConnecting.value)
+const isConnected = computed(() => database.isConnected.value)
 
 // Methods
 async function handleTest() {
