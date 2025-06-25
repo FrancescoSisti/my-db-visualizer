@@ -334,8 +334,8 @@ const showKeyboardShortcuts = () => {
 
 const showAboutDialog = () => {
   uiStore.showToast({
-    title: 'DB Visualizer Pro',
-    message: 'A modern database visualization tool built with Vue.js, TypeScript, and Electron.\n\nVersion: 1.0.0\nDeveloped with ❤️',
+    title: 'DB Visualizer Pro Alpha',
+    message: '🚀 Version: 0.1.0-alpha\n\nA modern database visualization tool built with Vue.js, TypeScript, and Electron.\n\n✨ Features:\n• MySQL connectivity\n• Query editor with save/load\n• Data export (CSV/JSON)\n• Professional UI/UX\n• Dark/Light modes\n\n🔧 Built with:\n• Vue.js 3.5.13\n• Electron 33.2.1\n• TypeScript 5.7.2\n\nDeveloped with ❤️',
     type: 'info'
   })
 }

@@ -10,7 +10,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 1.79 4 4 4h8c0 2.21 1.79 4 4 4V7c0-2.21-1.79-4-4-4H8c-2.21 0-4 1.79-4 4z" />
             </svg>
           </div>
-          <h1 class="brand-title">DB Visualizer Pro</h1>
+          <h1 class="brand-title">DB Visualizer Pro Alpha</h1>
         </div>
 
         <!-- Navigation -->
