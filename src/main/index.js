@@ -39,14 +39,20 @@ const createWindow = () => {
     
     // Reload on changes in development
     if (process.env.NODE_ENV === 'development') {
-      require('electron-reload')(__dirname, {
-        electron: path.join(__dirname, '..', '..', 'node_modules', '.bin', 'electron'),
-        hardResetMethod: 'exit'
-      })
+      try {
+        require('electron-reload')(__dirname, {
+          electron: path.join(__dirname, '..', '..', 'node_modules', '.bin', 'electron'),
+          hardResetMethod: 'exit'
+        })
+      } catch (e) {
+        console.log('electron-reload not available')
+      }
     }
   } else {
     // In production, load the built files
-    mainWindow.loadFile(path.join(__dirname, '..', 'dist', 'index.html'))
+    const rendererPath = path.join(__dirname, '..', '..', 'dist', 'index.html')
+    console.log('Loading renderer from:', rendererPath)
+    mainWindow.loadFile(rendererPath)
   }
 
   // Show window when ready to prevent visual flash
