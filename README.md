@@ -1,226 +1,332 @@
-# DB Visualizer Pro
+# 🚀 DB Visualizer Pro
 
-Un database visualizer locale moderno con interfaccia intuitiva per gestire database MySQL. Progettato come alternativa moderna a PHPMyAdmin con una UI/UX migliorata.
+**Version:** `0.1.0-alpha` | **Status:** Alpha Release | **License:** MIT
 
-## 🚀 Caratteristiche
+<div align="center">
 
-- **Interfaccia Moderna**: Design pulito e intuitivo con supporto per dark mode
-- **Gestione Connessioni**: Test e gestione semplificata delle connessioni database
-- **Visualizzazione Dati**: Tabelle responsive e interattive per i dati
-- **Query Editor**: Editor SQL con syntax highlighting e auto-completamento
-- **Multi-Database**: Supporto per più database contemporaneamente
-- **Sicurezza**: Connessioni sicure con context isolation di Electron
-- **Performance**: Architettura ottimizzata per grandi dataset
+![DB Visualizer Pro](https://img.shields.io/badge/DB%20Visualizer%20Pro-0.1.0--alpha-blue.svg)
+![Electron](https://img.shields.io/badge/Electron-33.2.1-brightgreen.svg)
+![Vue.js](https://img.shields.io/badge/Vue.js-3.5.13-4FC08D.svg)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.7.2-3178C6.svg)
+![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-## 🏗️ Architettura del Progetto
+**A modern, intuitive database visualization tool built with Vue.js, TypeScript, and Electron**
 
-```
-my-db-visualizer/
-├── src/
-│   ├── main/                   # Electron main process
-│   │   └── index.js           # Main entry point
-│   ├── preload/               # Preload scripts
-│   │   └── index.js          # API bridge sicura
-│   └── renderer/             # Frontend Vue.js
-│       ├── components/       # Componenti riutilizzabili
-│       ├── views/           # Pagine principali
-│       ├── stores/          # State management (Pinia)
-│       ├── types/           # TypeScript definitions
-│       ├── utils/           # Utility functions
-│       ├── App.vue          # Componente root
-│       ├── main.ts          # Entry point Vue
-│       └── style.css        # Stili globali
-├── forge.config.js          # Configurazione Electron Forge
-├── vite.config.js          # Configurazione Vite
-├── tailwind.config.js      # Configurazione Tailwind CSS
-└── tsconfig.json           # Configurazione TypeScript
-```
+[Features](#features) • [Installation](#installation) • [Usage](#usage) • [Development](#development) • [Contributing](#contributing)
 
-## 🛠️ Stack Tecnologico
-
-### Backend (Electron Main Process)
-
-- **Electron**: Framework per app desktop
-- **mysql2**: Driver MySQL nativo con promise support
-- **IPC Communication**: Comunicazione sicura tra main e renderer
-
-### Frontend (Renderer Process)
-
-- **Vue.js 3**: Framework reattivo con Composition API
-- **TypeScript**: Type safety e sviluppo robusto
-- **Vite**: Build tool veloce e moderno
-- **Pinia**: State management moderno per Vue
-- **Vue Router**: Routing client-side
-- **VueUse**: Utilities reattive
-
-### UI/UX
-
-- **Tailwind CSS**: Utility-first CSS framework
-- **Headless UI**: Componenti accessibili headless
-- **Heroicons**: Icone SVG ottimizzate
-- **Dark Mode**: Supporto nativo per tema scuro
-
-### Development
-
-- **ESLint**: Linting per codice pulito
-- **PostCSS**: Processing CSS avanzato
-- **Electron Forge**: Packaging e distribuzione
-
-## 📦 Setup e Installazione
-
-### Prerequisiti
-
-- Node.js >= 18.0.0
-- npm >= 8.0.0
-- MySQL Server locale (es. DBngin, XAMPP, MAMP)
-
-### Installazione
-
-```bash
-# Clone del repository
-git clone https://github.com/francescosisti/db-visualizer-pro.git
-cd my-db-visualizer
-
-# Installazione dipendenze
-npm install
-
-# Avvio in modalità sviluppo
-npm run dev
-```
-
-### Comandi Disponibili
-
-```bash
-# Sviluppo
-npm run dev              # Avvia app in development mode
-npm run dev:renderer     # Solo server Vite (per debug frontend)
-
-# Build e Packaging
-npm run build           # Build completo del progetto
-npm run build:renderer  # Build solo del frontend
-npm run package         # Crea package Electron
-npm run make           # Crea distributables
-
-# Qualità del Codice
-npm run lint           # Esegue ESLint
-npm run lint:fix       # Fix automatico problemi ESLint
-npm run type-check     # Verifica tipi TypeScript
-```
-
-## 🎯 Funzionalità Pianificate
-
-### Fase 1 - Core Features (Completata)
-
-- [x] Architettura base del progetto
-- [x] Setup Electron + Vue.js + TypeScript
-- [x] Sistema di connessione database
-- [x] Interfaccia utente moderna
-- [x] State management con Pinia
-
-### Fase 2 - Database Management
-
-- [ ] Visualizzazione struttura database
-- [ ] Browse tabelle con paginazione
-- [ ] Operazioni CRUD sui dati
-- [ ] Import/Export dati (CSV, JSON, SQL)
-
-### Fase 3 - Advanced Features
-
-- [ ] Query builder visuale
-- [ ] Performance monitoring
-- [ ] Backup e restore database
-- [ ] Schema designer visuale
-
-### Fase 4 - Extra Features
-
-- [ ] Plugin system
-- [ ] Connessioni multiple simultanee
-- [ ] Syntax highlighting avanzato
-- [ ] Auto-completion intelligente
-
-## 🔒 Sicurezza
-
-Il progetto implementa le best practices di sicurezza per Electron:
-
-- **Context Isolation**: Renderer process isolato dal main process
-- **Preload Scripts**: API sicure esposte tramite contextBridge
-- **No Node Integration**: Renderer non ha accesso diretto a Node.js APIs
-- **CSP**: Content Security Policy implementata
-- **Sanitization**: Input sanitization per prevenire SQL injection
-
-## 🎨 Design System
-
-### Color Palette
-
-```css
-Primary: #3B82F6 (Blue)
-Gray Scale: #F9FAFB → #030712
-Success: #10B981 (Green)
-Warning: #F59E0B (Yellow)
-Error: #EF4444 (Red)
-```
-
-### Typography
-
-- **Primary**: Inter (sans-serif)
-- **Code**: JetBrains Mono (monospace)
-
-### Spacing
-
-Sistema basato su multipli di 4px (Tailwind default)
-
-## 🤝 Contribuzione
-
-1. Fork del progetto
-2. Crea un branch per la feature (`git checkout -b feature/AmazingFeature`)
-3. Commit delle modifiche (`git commit -m 'Add some AmazingFeature'`)
-4. Push al branch (`git push origin feature/AmazingFeature`)
-5. Apri una Pull Request
-
-## 📝 Licenza
-
-Distribuito sotto licenza MIT. Vedi `LICENSE` per maggiori informazioni.
-
-## 👨‍💻 Autore
-
-**Francesco Sisti**
-
-- Email: francescosisti61@gmail.com
-- GitHub: [@francescosisti](https://github.com/francescosisti)
+</div>
 
 ---
 
-_Progetto creato per fornire un'alternativa moderna e intuitiva a PHPMyAdmin per la gestione di database MySQL locali._
+## 📸 Screenshots
 
-graph TD
-A["🖥️ Electron App"] --> B["Main Process"]
-A --> C["Renderer Process"]
+### 🌐 Connection Management
 
-    B --> D["Database Connection Pool<br/>mysql2"]
-    B --> E["IPC Handlers<br/>- testConnection<br/>- connect<br/>- executeQuery<br/>- getDatabases<br/>- getTables"]
+- **Intuitive Connection Form** with validation
+- **Connection History** with quick access
+- **Real-time Connection Testing**
 
-    C --> F["Vue.js 3 + TypeScript"]
-    F --> G["Vue Router<br/>- Connection<br/>- Database<br/>- Query Editor"]
-    F --> H["Pinia Store<br/>- Connection State<br/>- UI State"]
-    F --> I["Components<br/>- ConnectionForm<br/>- DatabaseBrowser<br/>- QueryEditor<br/>- DataTable"]
+### 🗄️ Database Explorer
 
-    J["Preload Script"] --> K["Secure API Bridge<br/>contextBridge"]
-    B --> J
-    J --> C
+- **Visual Database Browser** with tree view
+- **Table Structure Viewer**
+- **Data Preview** with pagination
 
-    L["📱 UI Layer"] --> M["Tailwind CSS"]
-    L --> N["Headless UI"]
-    L --> O["Heroicons"]
-    C --> L
+### ⚡ Query Editor
 
-    P["🔧 Development"] --> Q["Vite Build Tool"]
-    P --> R["ESLint + TypeScript"]
-    P --> S["Electron Forge"]
+- **Multi-tab Query Interface**
+- **SQL Syntax Support**
+- **Query History & Bookmarks**
+- **Results Export** (CSV/JSON)
 
-    T["🗄️ MySQL Database"] --> D
+---
 
-    style A fill:#3B82F6,stroke:#1E40AF,color:#fff
-    style B fill:#10B981,stroke:#059669,color:#fff
-    style C fill:#F59E0B,stroke:#D97706,color:#fff
-    style F fill:#8B5CF6,stroke:#7C3AED,color:#fff
-    style T fill:#EF4444,stroke:#DC2626,color:#fff
+## ✨ Features
+
+### 🔗 **Database Connectivity**
+
+- ✅ MySQL database support
+- ✅ Connection pooling & management
+- ✅ Real-time connection monitoring
+- ✅ Connection persistence & history
+- ⏳ PostgreSQL support _(roadmap)_
+- ⏳ SQLite support _(roadmap)_
+
+### 🎨 **User Interface**
+
+- ✅ Modern, responsive design
+- ✅ Dark/Light mode toggle
+- ✅ Collapsible sidebar
+- ✅ Toast notifications system
+- ✅ Loading states & spinners
+- ✅ Professional menu system
+
+### 📊 **Data Management**
+
+- ✅ Database & table explorer
+- ✅ Query editor with multi-tabs
+- ✅ Table data viewing with pagination
+- ✅ Export data (CSV/JSON)
+- ✅ Query save/load functionality
+- ⏳ Advanced data filtering _(roadmap)_
+
+### 🛠️ **Developer Experience**
+
+- ✅ TypeScript throughout
+- ✅ Vue 3 Composition API
+- ✅ Pinia state management
+- ✅ Tailwind CSS styling
+- ✅ Hot reload in development
+- ✅ Cross-platform compatibility
+
+---
+
+## 🎯 **System Requirements**
+
+| Component    | Minimum                               | Recommended     |
+| ------------ | ------------------------------------- | --------------- |
+| **OS**       | Windows 10, macOS 10.14, Ubuntu 18.04 | Latest versions |
+| **RAM**      | 4GB                                   | 8GB+            |
+| **Storage**  | 500MB                                 | 1GB+            |
+| **Node.js**  | 18.0+                                 | 20.0+           |
+| **Database** | MySQL 5.7+                            | MySQL 8.0+      |
+
+---
+
+## 🚀 **Installation**
+
+### Option 1: Download Release _(Coming Soon)_
+
+```bash
+# Download from GitHub Releases
+# Extract and run the executable
+```
+
+### Option 2: Build from Source
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/db-visualizer-pro.git
+cd db-visualizer-pro
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+npm run build:electron
+```
+
+---
+
+## 🎮 **Usage**
+
+### 1. **Database Connection**
+
+1. Launch DB Visualizer Pro
+2. Enter your MySQL connection details:
+   - Host (e.g., `localhost`)
+   - Port (default: `3306`)
+   - Username
+   - Password
+3. Test connection and connect
+
+### 2. **Explore Databases**
+
+1. Browse databases in the sidebar
+2. Expand tables to view structure
+3. Click tables to view data
+4. Use the table structure tab for column details
+
+### 3. **Query Management**
+
+1. Open Query Editor (`Ctrl+T`)
+2. Write SQL queries
+3. Execute with `Ctrl+Enter`
+4. Save queries (`Ctrl+S`)
+5. Load saved queries (`Ctrl+O`)
+6. Export results (`Ctrl+E`)
+
+### 4. **Keyboard Shortcuts**
+
+| Shortcut       | Action              |
+| -------------- | ------------------- |
+| `Ctrl+N`       | New Connection      |
+| `Ctrl+Shift+C` | Connect to Database |
+| `Ctrl+Shift+D` | Disconnect          |
+| `Ctrl+T`       | New Query Tab       |
+| `Ctrl+Enter`   | Execute Query       |
+| `Ctrl+S`       | Save Query          |
+| `Ctrl+O`       | Load Query          |
+| `Ctrl+E`       | Export Data         |
+| `Ctrl+B`       | Toggle Sidebar      |
+| `Ctrl+Shift+T` | Toggle Dark Mode    |
+| `F5`           | Refresh             |
+| `F11`          | Full Screen         |
+
+---
+
+## 🔧 **Development**
+
+### **Project Structure**
+
+```
+db-visualizer-pro/
+├── src/
+│   ├── main/           # Electron main process
+│   ├── preload/        # Preload scripts
+│   └── renderer/       # Vue.js frontend
+│       ├── components/ # UI components
+│       ├── composables/# Vue composables
+│       ├── stores/     # Pinia stores
+│       ├── types/      # TypeScript types
+│       ├── utils/      # Utility functions
+│       └── views/      # Application views
+├── dist/               # Build output
+└── forge.config.js     # Electron Forge config
+```
+
+### **Development Commands**
+
+```bash
+# Start development server
+npm run dev
+
+# Run linting
+npm run lint
+
+# Type checking
+npx vue-tsc --noEmit
+
+# Build for production
+npm run build
+npm run build:electron
+
+# Package application
+npm run package
+
+# Create distributables
+npm run make
+```
+
+### **Version Management**
+
+```bash
+# Create alpha release
+npm run version:alpha
+npm run release:alpha
+
+# Create beta release
+npm run version:beta
+npm run release:beta
+
+# Standard releases
+npm run version:patch   # 0.1.0 -> 0.1.1
+npm run version:minor   # 0.1.0 -> 0.2.0
+npm run version:major   # 0.1.0 -> 1.0.0
+```
+
+---
+
+## 📋 **Roadmap**
+
+### **Alpha Phase (Current: 0.1.0)**
+
+- ✅ Basic MySQL connectivity
+- ✅ Database & table explorer
+- ✅ Query editor with save/load
+- ✅ Data export functionality
+- ✅ Professional UI/UX
+
+### **Beta Phase (0.2.0)**
+
+- 🔄 Query history management
+- 🔄 Application settings
+- 🔄 ER diagram generation
+- 🔄 Performance monitoring
+- 🔄 Advanced table operations
+
+### **Release Candidate (0.9.0)**
+
+- 🔄 PostgreSQL & SQLite support
+- 🔄 Data import functionality
+- 🔄 Chart & visualization tools
+- 🔄 Backup & restore features
+- 🔄 Plugin architecture
+
+### **Version 1.0.0**
+
+- 🔄 Multi-database connections
+- 🔄 Advanced security features
+- 🔄 Team collaboration tools
+- 🔄 Cloud database support
+- 🔄 Enterprise features
+
+---
+
+## 🤝 **Contributing**
+
+We welcome contributions! Here's how to get started:
+
+### **Development Setup**
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes
+4. Test thoroughly
+5. Commit: `git commit -m 'Add amazing feature'`
+6. Push: `git push origin feature/amazing-feature`
+7. Open a Pull Request
+
+### **Contribution Guidelines**
+
+- Follow TypeScript best practices
+- Use Vue 3 Composition API
+- Maintain responsive design
+- Add appropriate tests
+- Update documentation
+
+---
+
+## 🐛 **Bug Reports & Feature Requests**
+
+- **Bug Reports:** [Create an Issue](https://github.com/yourusername/db-visualizer-pro/issues)
+- **Feature Requests:** [Start a Discussion](https://github.com/yourusername/db-visualizer-pro/discussions)
+- **Security Issues:** Email us at security@dbvisualizer.dev
+
+---
+
+## 📄 **License**
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 **Acknowledgments**
+
+- **Vue.js Team** for the amazing framework
+- **Electron Team** for enabling desktop development
+- **MySQL Team** for the robust database engine
+- **Tailwind CSS** for the utility-first styling
+- **All Contributors** who help improve this project
+
+---
+
+## 📞 **Support**
+
+- **Documentation:** [GitHub Wiki](https://github.com/yourusername/db-visualizer-pro/wiki)
+- **Community:** [GitHub Discussions](https://github.com/yourusername/db-visualizer-pro/discussions)
+- **Email:** support@dbvisualizer.dev
+
+---
+
+<div align="center">
+
+**Made with ❤️ by the DB Visualizer Team**
+
+⭐ **Star this repo if you find it useful!** ⭐
+
+</div>
