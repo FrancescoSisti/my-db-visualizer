@@ -4,13 +4,20 @@
     <MainLayout>
       <router-view />
     </MainLayout>
+
+    <!-- Connection Info Modal -->
+    <ConnectionInfoModal
+      :is-open="showConnectionInfo"
+      @close="showConnectionInfo = false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import MainLayout from './components/layout/MainLayout.vue'
+import ConnectionInfoModal from './components/ui/ConnectionInfoModal.vue'
 import { useUIStore } from './stores/ui'
 import { useConnectionStore } from './stores/connection'
 import { useDatabase } from './composables/useDatabase'
@@ -19,6 +26,8 @@ const router = useRouter()
 const uiStore = useUIStore()
 const connectionStore = useConnectionStore()
 const { testConnection, connectToDatabase, disconnect } = useDatabase()
+
+const showConnectionInfo = ref(false)
 
 // Handle menu actions from main process
 const handleMenuAction = (event: Electron.IpcRendererEvent, action: string) => {
@@ -70,11 +79,11 @@ const handleMenuAction = (event: Electron.IpcRendererEvent, action: string) => {
       break
       
     case 'save-query':
-      uiStore.showToast('Save query feature coming soon!', 'info')
+      handleSaveQuery()
       break
       
     case 'load-query':
-      uiStore.showToast('Load query feature coming soon!', 'info')
+      handleLoadQuery()
       break
       
     case 'query-history':
@@ -82,11 +91,11 @@ const handleMenuAction = (event: Electron.IpcRendererEvent, action: string) => {
       break
       
     case 'import-sql':
-      uiStore.showToast('Import SQL feature coming soon!', 'info')
+      handleLoadQuery() // Use same load functionality
       break
       
     case 'export-data':
-      uiStore.showToast('Export data feature coming soon!', 'info')
+      handleExportData()
       break
       
     case 'settings':
@@ -98,12 +107,7 @@ const handleMenuAction = (event: Electron.IpcRendererEvent, action: string) => {
       break
       
     case 'connection-info':
-      if (connectionStore.isConnected) {
-        const info = connectionStore.currentConnection
-        uiStore.showToast(`Connected to ${info?.host}:${info?.port}`, 'info')
-      } else {
-        uiStore.showToast('No active connection', 'warning')
-      }
+      handleConnectionInfo()
       break
       
     case 'performance-monitor':
@@ -169,6 +173,139 @@ const handleRefresh = () => {
   } else {
     // Generic refresh
     window.location.reload()
+  }
+}
+
+const handleSaveQuery = async () => {
+  try {
+    // Get current query content from route
+    const currentRoute = router.currentRoute.value.path
+    
+    if (currentRoute !== '/query') {
+      uiStore.showToast('Please open Query Editor first', 'warning')
+      return
+    }
+
+    // Get query content from local storage or active tab
+    const queryContent = localStorage.getItem('current-query') || ''
+    
+    if (!queryContent.trim()) {
+      uiStore.showToast('No query to save', 'warning')
+      return
+    }
+
+    const result = await window.electronAPI.fileSystem.saveQuery({
+      content: queryContent,
+      title: 'Untitled Query'
+    })
+
+    if (result.success) {
+      uiStore.showToast(`Query saved to ${result.path}`, 'success')
+    } else {
+      uiStore.showToast(result.message || 'Failed to save query', 'error')
+    }
+  } catch (error) {
+    uiStore.showToast('Error saving query', 'error')
+  }
+}
+
+const handleLoadQuery = async () => {
+  try {
+    const result = await window.electronAPI.fileSystem.loadQuery()
+
+    if (result.success && result.content) {
+      // Store loaded content in localStorage
+      localStorage.setItem('current-query', result.content)
+      
+      // Navigate to query editor if not already there
+      if (router.currentRoute.value.path !== '/query') {
+        await router.push('/query')
+      }
+      
+      // Trigger event to update query editor
+      window.dispatchEvent(new CustomEvent('query-loaded', { 
+        detail: { 
+          content: result.content, 
+          filename: result.filename 
+        } 
+      }))
+      
+      uiStore.showToast(`Query loaded from ${result.filename}`, 'success')
+    } else {
+      if (result.message !== 'Load cancelled') {
+        uiStore.showToast(result.message || 'Failed to load query', 'error')
+      }
+    }
+  } catch (error) {
+    uiStore.showToast('Error loading query', 'error')
+  }
+}
+
+const handleExportData = async () => {
+  try {
+    // Get data from current view
+    const currentRoute = router.currentRoute.value.path
+    
+    if (currentRoute === '/database') {
+      // Export table data
+      const tableData = JSON.parse(localStorage.getItem('current-table-data') || '[]')
+      const headers = JSON.parse(localStorage.getItem('current-table-headers') || '[]')
+      
+      if (tableData.length === 0) {
+        uiStore.showToast('No data to export. Please select a table first.', 'warning')
+        return
+      }
+
+      const result = await window.electronAPI.fileSystem.exportData({
+        rows: tableData,
+        headers: headers
+      })
+
+      if (result.success) {
+        // Update export counter
+        const currentCount = parseInt(localStorage.getItem('data-exported') || '0')
+        localStorage.setItem('data-exported', (currentCount + (result.recordsExported || 0)).toString())
+        
+        uiStore.showToast(`${result.recordsExported} records exported to ${result.path}`, 'success')
+      } else {
+        if (result.message !== 'Export cancelled') {
+          uiStore.showToast(result.message || 'Failed to export data', 'error')
+        }
+      }
+    } else if (currentRoute === '/query') {
+      // Export query results
+      const queryResults = JSON.parse(localStorage.getItem('query-results') || '[]')
+      
+      if (queryResults.length === 0) {
+        uiStore.showToast('No query results to export. Execute a query first.', 'warning')
+        return
+      }
+
+      const result = await window.electronAPI.fileSystem.exportData({
+        rows: queryResults,
+        headers: Object.keys(queryResults[0] || {})
+      })
+
+      if (result.success) {
+        uiStore.showToast(`${result.recordsExported} records exported to ${result.path}`, 'success')
+      } else {
+        if (result.message !== 'Export cancelled') {
+          uiStore.showToast(result.message || 'Failed to export data', 'error')
+        }
+      }
+    } else {
+      uiStore.showToast('Please navigate to Database or Query view to export data', 'info')
+    }
+  } catch (error) {
+    uiStore.showToast('Error exporting data', 'error')
+  }
+}
+
+const handleConnectionInfo = () => {
+  if (connectionStore.isConnected) {
+    showConnectionInfo.value = true
+  } else {
+    uiStore.showToast('No active database connection', 'warning')
   }
 }
 
