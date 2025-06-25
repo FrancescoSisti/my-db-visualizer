@@ -33,6 +33,7 @@ export const useConnectionStore = defineStore('connection', () => {
       
       if (result.success) {
         currentConnection.value = config
+        isConnected.value = true
         addToHistory(config)
         await loadDatabases()
       }
@@ -46,7 +47,17 @@ export const useConnectionStore = defineStore('connection', () => {
     }
   }
 
-  function disconnect(): void {
+  async function disconnect(): Promise<void> {
+    try {
+      await window.dbAPI.disconnect()
+    } catch (error) {
+      console.error('Failed to disconnect:', error)
+    } finally {
+      clearConnection()
+    }
+  }
+
+  function clearConnection(): void {
     currentConnection.value = null
     databases.value = []
     tables.value = []
@@ -186,6 +197,8 @@ export const useConnectionStore = defineStore('connection', () => {
     testConnection,
     connect,
     disconnect,
+    setConnection,
+    clearConnection,
     loadDatabases,
     loadTables,
     executeQuery,
