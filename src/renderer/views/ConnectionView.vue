@@ -202,8 +202,8 @@
               <div class="w-2 h-2 bg-purple-500 rounded-full"></div>
             </div>
             <div>
-              <p class="font-medium text-gray-900 dark:text-white">Secure Connections</p>
-              <p class="text-gray-600 dark:text-gray-300">Your credentials are stored securely locally</p>
+              <p class="font-medium text-gray-900 dark:text-white">Security</p>
+              <p class="text-gray-600 dark:text-gray-300">Use strong passwords and secure connections</p>
             </div>
           </div>
         </div>
@@ -213,12 +213,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useConnectionStore } from '@/stores/connection'
 import { useUIStore } from '@/stores/ui'
-import { validateConnectionConfig } from '@/utils/validators'
-import type { DatabaseConfig } from '@/types/global'
+
+interface DatabaseConfig {
+  host: string
+  port: number
+  user: string
+  password: string
+  database?: string
+}
 
 const router = useRouter()
 const connectionStore = useConnectionStore()
@@ -237,61 +243,48 @@ const isTestingConnection = ref(false)
 const isConnecting = ref(false)
 
 // Computed
-const connectionHistory = computed(() => connectionStore.connectionHistory)
 const isFormValid = computed(() => {
-  const result = validateConnectionConfig({
-    host: connectionForm.value.host,
-    port: connectionForm.value.port,
-    user: connectionForm.value.user,
-    password: connectionForm.value.password
-  })
-  return result.isValid
+  return connectionForm.value.host &&
+         connectionForm.value.port &&
+         connectionForm.value.user &&
+         connectionForm.value.password
 })
+
+const connectionHistory = computed(() => connectionStore.connectionHistory)
 
 // Methods
 async function testConnection() {
-  if (!isFormValid.value) {
-    uiStore.showToast('Please fill in all required fields correctly', 'error')
-    return
-  }
+  if (!isFormValid.value) return
 
   isTestingConnection.value = true
-
+  
   try {
     const result = await connectionStore.testConnection(connectionForm.value)
     
     if (result.success) {
       uiStore.showToast('Connection test successful!', 'success')
     } else {
-      uiStore.showToast(`Connection test failed: ${result.message}`, 'error')
+      uiStore.showToast(`Connection failed: ${result.message}`, 'error')
     }
   } catch (error) {
-    uiStore.showToast(`Connection test error: ${error}`, 'error')
+    uiStore.showToast(`Test failed: ${error}`, 'error')
   } finally {
     isTestingConnection.value = false
   }
 }
 
 async function handleConnect() {
-  if (!isFormValid.value) {
-    uiStore.showToast('Please fill in all required fields correctly', 'error')
-    return
-  }
+  if (!isFormValid.value) return
 
   isConnecting.value = true
+  uiStore.setLoading(true, 'Connecting to database...')
 
   try {
     const result = await connectionStore.connect(connectionForm.value)
     
     if (result.success) {
-      uiStore.showToast('Connected successfully!', 'success')
-      
-      // Navigate to database view
-      if (connectionForm.value.database) {
-        router.push(`/database/${connectionForm.value.database}`)
-      } else {
-        router.push('/database')
-      }
+      uiStore.showToast('Successfully connected to database!', 'success')
+      router.push('/database')
     } else {
       uiStore.showToast(`Connection failed: ${result.message}`, 'error')
     }
@@ -299,6 +292,7 @@ async function handleConnect() {
     uiStore.showToast(`Connection error: ${error}`, 'error')
   } finally {
     isConnecting.value = false
+    uiStore.setLoading(false)
   }
 }
 
@@ -308,14 +302,5 @@ function loadConnection(connection: DatabaseConfig) {
 
 function removeFromHistory(connection: DatabaseConfig) {
   connectionStore.removeFromHistory(connection)
-  uiStore.showToast('Connection removed from history', 'info')
 }
-
-// Initialize
-onMounted(() => {
-  // If already connected, redirect to database view
-  if (connectionStore.isConnected) {
-    router.push('/database')
-  }
-})
 </script> 

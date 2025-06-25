@@ -71,8 +71,7 @@
           </div>
 
           <div v-if="tablesLoading" class="text-center py-4">
-            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600 mx-auto"></div>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Loading tables...</p>
+            <LoadingSpinner message="Loading tables..." />
           </div>
 
           <div v-else class="space-y-1">
@@ -196,6 +195,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useDatabase } from '@/composables/useDatabase'
 import { formatConnectionString } from '@/utils/formatters'
 import { useConnectionStore } from '@/stores/connection'
+import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 
 const route = useRoute()
 const router = useRouter()

@@ -191,3 +191,36 @@ Distribuito sotto licenza MIT. Vedi `LICENSE` per maggiori informazioni.
 ---
 
 _Progetto creato per fornire un'alternativa moderna e intuitiva a PHPMyAdmin per la gestione di database MySQL locali._
+
+graph TD
+A["🖥️ Electron App"] --> B["Main Process"]
+A --> C["Renderer Process"]
+
+    B --> D["Database Connection Pool<br/>mysql2"]
+    B --> E["IPC Handlers<br/>- testConnection<br/>- connect<br/>- executeQuery<br/>- getDatabases<br/>- getTables"]
+
+    C --> F["Vue.js 3 + TypeScript"]
+    F --> G["Vue Router<br/>- Connection<br/>- Database<br/>- Query Editor"]
+    F --> H["Pinia Store<br/>- Connection State<br/>- UI State"]
+    F --> I["Components<br/>- ConnectionForm<br/>- DatabaseBrowser<br/>- QueryEditor<br/>- DataTable"]
+
+    J["Preload Script"] --> K["Secure API Bridge<br/>contextBridge"]
+    B --> J
+    J --> C
+
+    L["📱 UI Layer"] --> M["Tailwind CSS"]
+    L --> N["Headless UI"]
+    L --> O["Heroicons"]
+    C --> L
+
+    P["🔧 Development"] --> Q["Vite Build Tool"]
+    P --> R["ESLint + TypeScript"]
+    P --> S["Electron Forge"]
+
+    T["🗄️ MySQL Database"] --> D
+
+    style A fill:#3B82F6,stroke:#1E40AF,color:#fff
+    style B fill:#10B981,stroke:#059669,color:#fff
+    style C fill:#F59E0B,stroke:#D97706,color:#fff
+    style F fill:#8B5CF6,stroke:#7C3AED,color:#fff
+    style T fill:#EF4444,stroke:#DC2626,color:#fff

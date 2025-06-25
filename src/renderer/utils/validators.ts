@@ -268,12 +268,13 @@ export function validateDataType(value: any, expectedType: string): ValidationRe
       }
       break
     
-    case 'date':
+    case 'date': {
       const date = new Date(value)
       if (isNaN(date.getTime())) {
         return { isValid: false, message: 'Value must be a valid date' }
       }
       break
+    }
   }
 
   return { isValid: true }

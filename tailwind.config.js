@@ -2,7 +2,7 @@
 export default {
   content: [
     "./src/renderer/index.html",
-    "./src/renderer/**/*.{js,ts,jsx,tsx,vue}",
+    "./src/renderer/**/*.{vue,js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
@@ -36,7 +36,7 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Consolas', 'monospace'],
+        mono: ['JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', 'monospace'],
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',

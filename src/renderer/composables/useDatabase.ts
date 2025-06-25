@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
 import { useConnectionStore } from '@/stores/connection'
 import { useUIStore } from '@/stores/ui'
-import type { TableInfo, ColumnInfo, DatabaseInfo, TableData } from '@/types/database'
+import type { TableInfo, ColumnInfo, TableData } from '@/types/database'
 
 export function useDatabase() {
   const connectionStore = useConnectionStore()
