@@ -4,12 +4,29 @@ const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 module.exports = {
   packagerConfig: {
     asar: true,
+    name: 'DB Visualizer Pro',
+    executableName: 'db-visualizer-pro',
+    icon: './assets/icon', // You can add an icon later
+    ignore: [
+      /^\/src\/renderer/,
+      /^\/\.vscode/,
+      /^\/\.git/,
+      /^\/node_modules\/(?!.*\.(node|dll|dylib|so)$)/,
+      /tailwind\.config\.js/,
+      /postcss\.config\.js/,
+      /vite\.config\.js/,
+      /tsconfig.*\.json/
+    ],
   },
   rebuildConfig: {},
   makers: [
     {
       name: '@electron-forge/maker-squirrel',
-      config: {},
+      config: {
+        name: 'db_visualizer_pro',
+        setupExe: 'DB Visualizer Pro Setup.exe',
+        setupIcon: './assets/icon.ico'
+      },
     },
     {
       name: '@electron-forge/maker-zip',
@@ -17,11 +34,23 @@ module.exports = {
     },
     {
       name: '@electron-forge/maker-deb',
-      config: {},
+      config: {
+        options: {
+          maintainer: 'Francesco Sisti',
+          homepage: 'https://github.com/francescosisti/db-visualizer-pro',
+          description: 'Modern local database visualizer with intuitive UI/UX'
+        }
+      },
     },
     {
       name: '@electron-forge/maker-rpm',
-      config: {},
+      config: {
+        options: {
+          maintainer: 'Francesco Sisti',
+          homepage: 'https://github.com/francescosisti/db-visualizer-pro',
+          description: 'Modern local database visualizer with intuitive UI/UX'
+        }
+      },
     },
   ],
   plugins: [
