@@ -16,6 +16,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ping: () => ipcRenderer.invoke('db:ping')
   },
   
+  // File system operations
+  fileSystem: {
+    saveQuery: (data) => ipcRenderer.invoke('fs:save-query', data),
+    loadQuery: () => ipcRenderer.invoke('fs:load-query'),
+    exportData: (data) => ipcRenderer.invoke('fs:export-data', data)
+  },
+  
   // Menu events API
   onMenuAction: (callback) => {
     ipcRenderer.on('menu-action', callback)
@@ -28,9 +35,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // App information
   getVersion: () => ipcRenderer.invoke('app:get-version'),
   
-  // File system operations (for future use)
-  openFile: () => ipcRenderer.invoke('fs:open-file'),
-  saveFile: (data) => ipcRenderer.invoke('fs:save-file', data)
+  // Legacy compatibility
+  openFile: () => ipcRenderer.invoke('fs:load-query'),
+  saveFile: (data) => ipcRenderer.invoke('fs:save-query', data)
 })
 
 // Legacy dbAPI for backward compatibility

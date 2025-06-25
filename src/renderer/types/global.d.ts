@@ -28,6 +28,13 @@ export interface ElectronAPI {
     ping: () => Promise<{ success: boolean; message: string }>
   }
   
+  // File system operations  
+  fileSystem: {
+    saveQuery: (data: { content: string; title?: string }) => Promise<{ success: boolean; path?: string; message?: string }>
+    loadQuery: () => Promise<{ success: boolean; content?: string; filename?: string; path?: string; message?: string }>
+    exportData: (data: { rows: any[]; headers?: string[] }) => Promise<{ success: boolean; path?: string; recordsExported?: number; message?: string }>
+  }
+  
   // Menu events API
   onMenuAction: (callback: (event: Electron.IpcRendererEvent, action: string) => void) => void
   removeAllListeners: (channel: string) => void
@@ -35,9 +42,9 @@ export interface ElectronAPI {
   // App information
   getVersion: () => Promise<string>
   
-  // File system operations
-  openFile: () => Promise<string | null>
-  saveFile: (data: string) => Promise<boolean>
+  // Legacy compatibility
+  openFile: () => Promise<{ success: boolean; content?: string; filename?: string; path?: string; message?: string }>
+  saveFile: (data: { content: string; title?: string }) => Promise<{ success: boolean; path?: string; message?: string }>
 }
 
 export interface Database {

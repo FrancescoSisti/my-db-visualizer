@@ -1,5 +1,6 @@
-const { app, BrowserWindow, ipcMain, Menu } = require('electron')
+const { app, BrowserWindow, ipcMain, Menu, dialog } = require('electron')
 const path = require('node:path')
+const fs = require('fs').promises
 const mysql = require('mysql2/promise')
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling
@@ -553,4 +554,103 @@ app.on('before-quit', async () => {
   if (connectionPool) {
     await connectionPool.end()
   }
+})
+
+// File system handlers for save/load queries
+ipcMain.handle('fs:save-query', async (event, data) => {
+  try {
+    const { filePath } = await dialog.showSaveDialog(mainWindow, {
+      title: 'Save Query',
+      defaultPath: `query_${Date.now()}.sql`,
+      filters: [
+        { name: 'SQL Files', extensions: ['sql'] },
+        { name: 'Text Files', extensions: ['txt'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    })
+
+    if (filePath) {
+      await fs.writeFile(filePath, data.content, 'utf8')
+      return { success: true, path: filePath }
+    }
+    
+    return { success: false, message: 'Save cancelled' }
+  } catch (error) {
+    return { success: false, message: error.message }
+  }
+})
+
+ipcMain.handle('fs:load-query', async () => {
+  try {
+    const { filePaths } = await dialog.showOpenDialog(mainWindow, {
+      title: 'Load Query',
+      filters: [
+        { name: 'SQL Files', extensions: ['sql'] },
+        { name: 'Text Files', extensions: ['txt'] },
+        { name: 'All Files', extensions: ['*'] }
+      ],
+      properties: ['openFile']
+    })
+
+    if (filePaths && filePaths.length > 0) {
+      const content = await fs.readFile(filePaths[0], 'utf8')
+      return { 
+        success: true, 
+        content,
+        filename: path.basename(filePaths[0]),
+        path: filePaths[0]
+      }
+    }
+    
+    return { success: false, message: 'Load cancelled' }
+  } catch (error) {
+    return { success: false, message: error.message }
+  }
+})
+
+ipcMain.handle('fs:export-data', async (event, data) => {
+  try {
+    const { filePath } = await dialog.showSaveDialog(mainWindow, {
+      title: 'Export Data',
+      defaultPath: `export_${Date.now()}.csv`,
+      filters: [
+        { name: 'CSV Files', extensions: ['csv'] },
+        { name: 'JSON Files', extensions: ['json'] },
+        { name: 'Text Files', extensions: ['txt'] }
+      ]
+    })
+
+    if (filePath) {
+      const ext = path.extname(filePath).toLowerCase()
+      let content = ''
+      
+      if (ext === '.json') {
+        content = JSON.stringify(data.rows, null, 2)
+      } else {
+        // CSV format
+        if (data.headers && data.headers.length > 0) {
+          content = data.headers.join(',') + '\n'
+        }
+        
+        if (data.rows && data.rows.length > 0) {
+          content += data.rows.map(row => 
+            Object.values(row).map(val => 
+              typeof val === 'string' && val.includes(',') ? `"${val}"` : val
+            ).join(',')
+          ).join('\n')
+        }
+      }
+      
+      await fs.writeFile(filePath, content, 'utf8')
+      return { success: true, path: filePath, recordsExported: data.rows?.length || 0 }
+    }
+    
+    return { success: false, message: 'Export cancelled' }
+  } catch (error) {
+    return { success: false, message: error.message }
+  }
+})
+
+ipcMain.handle('app:get-version', () => {
+  return app.getVersion()
 }) 
