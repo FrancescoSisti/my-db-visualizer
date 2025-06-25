@@ -7,7 +7,7 @@ export default defineConfig({
   base: './',
   root: './src/renderer',
   build: {
-    outDir: './dist',
+    outDir: '../../dist',
     emptyOutDir: true,
     rollupOptions: {
       input: resolve(__dirname, 'src/renderer/index.html')
@@ -15,7 +15,11 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    strictPort: true
+    strictPort: true,
+    cors: true,
+    hmr: {
+      port: 5174
+    }
   },
   resolve: {
     alias: {
@@ -24,7 +28,8 @@ export default defineConfig({
       '@/views': resolve(__dirname, 'src/renderer/views'),
       '@/stores': resolve(__dirname, 'src/renderer/stores'),
       '@/types': resolve(__dirname, 'src/renderer/types'),
-      '@/utils': resolve(__dirname, 'src/renderer/utils')
+      '@/utils': resolve(__dirname, 'src/renderer/utils'),
+      '@/composables': resolve(__dirname, 'src/renderer/composables')
     }
   },
   define: {

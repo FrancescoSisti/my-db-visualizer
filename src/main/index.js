@@ -20,23 +20,42 @@ const createWindow = () => {
       preload: path.join(__dirname, '..', 'preload', 'index.js'),
       nodeIntegration: false,
       contextIsolation: true,
-      enableRemoteModule: false
+      enableRemoteModule: false,
+      webSecurity: true
     },
     titleBarStyle: 'hiddenInset',
-    show: false
+    show: false,
+    icon: path.join(__dirname, '..', '..', 'assets', 'icon.png') // Optional icon
   })
 
   // Load the appropriate URL for development or production
-  if (process.env.NODE_ENV === 'development') {
+  const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
+  
+  if (isDev) {
+    // In development, load from Vite dev server
     mainWindow.loadURL('http://localhost:5173')
     mainWindow.webContents.openDevTools()
+    
+    // Reload on changes in development
+    if (process.env.NODE_ENV === 'development') {
+      require('electron-reload')(__dirname, {
+        electron: path.join(__dirname, '..', '..', 'node_modules', '.bin', 'electron'),
+        hardResetMethod: 'exit'
+      })
+    }
   } else {
-    mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'dist', 'index.html'))
+    // In production, load the built files
+    mainWindow.loadFile(path.join(__dirname, '..', 'dist', 'index.html'))
   }
 
   // Show window when ready to prevent visual flash
   mainWindow.once('ready-to-show', () => {
     mainWindow.show()
+  })
+
+  // Handle window closed
+  mainWindow.on('closed', () => {
+    mainWindow = null
   })
 }
 
@@ -97,7 +116,24 @@ ipcMain.handle('db:connect', async (event, config) => {
       queueLimit: 0
     })
     
+    // Test the connection
+    const connection = await connectionPool.getConnection()
+    await connection.ping()
+    connection.release()
+    
     return { success: true, message: 'Connected to database' }
+  } catch (error) {
+    return { success: false, message: error.message }
+  }
+})
+
+ipcMain.handle('db:disconnect', async () => {
+  try {
+    if (connectionPool) {
+      await connectionPool.end()
+      connectionPool = null
+    }
+    return { success: true, message: 'Disconnected from database' }
   } catch (error) {
     return { success: false, message: error.message }
   }
@@ -141,10 +177,62 @@ ipcMain.handle('db:execute-query', async (event, query) => {
       data: rows, 
       fields: fields?.map(field => ({
         name: field.name,
-        type: field.type,
-        length: field.length
+        type: field.type
       }))
     }
+  } catch (error) {
+    return { success: false, message: error.message }
+  }
+})
+
+ipcMain.handle('db:get-table-structure', async (event, database, table) => {
+  try {
+    if (!connectionPool) {
+      throw new Error('No database connection')
+    }
+    
+    const [rows] = await connectionPool.execute('DESCRIBE ??.??', [database, table])
+    return { success: true, data: rows }
+  } catch (error) {
+    return { success: false, message: error.message }
+  }
+})
+
+ipcMain.handle('db:get-table-data', async (event, database, table, limit = 100, offset = 0) => {
+  try {
+    if (!connectionPool) {
+      throw new Error('No database connection')
+    }
+    
+    const [rows, fields] = await connectionPool.execute(
+      'SELECT * FROM ??.?? LIMIT ? OFFSET ?', 
+      [database, table, limit, offset]
+    )
+    
+    return { 
+      success: true, 
+      data: rows,
+      fields: fields?.map(field => ({
+        name: field.name,
+        type: field.type
+      }))
+    }
+  } catch (error) {
+    return { success: false, message: error.message }
+  }
+})
+
+ipcMain.handle('db:ping', async () => {
+  try {
+    if (!connectionPool) {
+      throw new Error('No database connection')
+    }
+    
+    const connection = await connectionPool.getConnection()
+    await connection.ping()
+    connection.release()
+    
+    return { success: true, message: 'Database connection is active' }
   } catch (error) {
     return { success: false, message: error.message }
   }
