@@ -17,21 +17,27 @@ export interface DatabaseResult {
 
 export interface ElectronAPI {
   database: {
-    testConnection: (config: DatabaseConfig) => Promise<DatabaseResult>
-    connect: (config: DatabaseConfig) => Promise<DatabaseResult>
-    disconnect: () => Promise<DatabaseResult>
-    getDatabases: () => Promise<DatabaseResult>
-    getTables: (database: string) => Promise<DatabaseResult>
-    getTableStructure: (database: string, table: string) => Promise<DatabaseResult>
-    getTableData: (database: string, table: string, limit?: number, offset?: number) => Promise<DatabaseResult>
-    executeQuery: (query: string) => Promise<DatabaseResult>
-    ping: () => Promise<DatabaseResult>
+    testConnection: (config: DatabaseConfig) => Promise<{ success: boolean; message: string }>
+    connect: (config: DatabaseConfig) => Promise<{ success: boolean; message: string }>
+    disconnect: () => Promise<{ success: boolean; message: string }>
+    getDatabases: () => Promise<{ success: boolean; data?: any[]; message?: string }>
+    getTables: (database: string) => Promise<{ success: boolean; data?: any[]; message?: string }>
+    executeQuery: (query: string) => Promise<{ success: boolean; data?: any[]; fields?: any[]; message?: string }>
+    getTableStructure: (database: string, table: string) => Promise<{ success: boolean; data?: any[]; message?: string }>
+    getTableData: (database: string, table: string, limit?: number, offset?: number) => Promise<{ success: boolean; data?: any[]; fields?: any[]; message?: string }>
+    ping: () => Promise<{ success: boolean; message: string }>
   }
-  ipcRenderer: {
-    invoke: (channel: string, ...args: any[]) => Promise<any>
-    on: (channel: string, listener: (event: any, ...args: any[]) => void) => void
-    removeAllListeners: (channel: string) => void
-  }
+  
+  // Menu events API
+  onMenuAction: (callback: (event: Electron.IpcRendererEvent, action: string) => void) => void
+  removeAllListeners: (channel: string) => void
+  
+  // App information
+  getVersion: () => Promise<string>
+  
+  // File system operations
+  openFile: () => Promise<string | null>
+  saveFile: (data: string) => Promise<boolean>
 }
 
 export interface Database {
@@ -47,19 +53,16 @@ export interface Table {
 declare global {
   interface Window {
     electronAPI: ElectronAPI
-    dbAPI: {
-      testConnection: (config: DatabaseConfig) => Promise<DatabaseResult>
-      connect: (config: DatabaseConfig) => Promise<DatabaseResult>
-      disconnect: () => Promise<DatabaseResult>
-      getDatabases: () => Promise<DatabaseResult>
-      getTables: (database: string) => Promise<DatabaseResult>
-      executeQuery: (query: string) => Promise<DatabaseResult>
-      getTableStructure: (database: string, table: string) => Promise<DatabaseResult>
-      getTableData: (database: string, table: string, limit?: number, offset?: number) => Promise<DatabaseResult>
-    }
+    dbAPI: ElectronAPI['database'] // Legacy compatibility
     appAPI: {
       getVersion: () => string
       getPlatform: () => string
+    }
+  }
+  
+  namespace Electron {
+    interface IpcRendererEvent {
+      sender: any
     }
   }
 }

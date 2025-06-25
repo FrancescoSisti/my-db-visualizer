@@ -1,8 +1,9 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
-// Expose unified API to renderer process
+// Expose protected methods that allow the renderer process to use
+// the ipcRenderer without exposing the entire object
 contextBridge.exposeInMainWorld('electronAPI', {
-  // Database API
+  // Database API methods
   database: {
     testConnection: (config) => ipcRenderer.invoke('db:test-connection', config),
     connect: (config) => ipcRenderer.invoke('db:connect', config),
@@ -15,15 +16,24 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ping: () => ipcRenderer.invoke('db:ping')
   },
   
-  // IPC methods
-  ipcRenderer: {
-    invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args),
-    on: (channel, listener) => ipcRenderer.on(channel, listener),
-    removeAllListeners: (channel) => ipcRenderer.removeAllListeners(channel)
-  }
+  // Menu events API
+  onMenuAction: (callback) => {
+    ipcRenderer.on('menu-action', callback)
+  },
+  
+  removeAllListeners: (channel) => {
+    ipcRenderer.removeAllListeners(channel)
+  },
+  
+  // App information
+  getVersion: () => ipcRenderer.invoke('app:get-version'),
+  
+  // File system operations (for future use)
+  openFile: () => ipcRenderer.invoke('fs:open-file'),
+  saveFile: (data) => ipcRenderer.invoke('fs:save-file', data)
 })
 
-// Keep legacy dbAPI for backward compatibility
+// Legacy dbAPI for backward compatibility
 contextBridge.exposeInMainWorld('dbAPI', {
   testConnection: (config) => ipcRenderer.invoke('db:test-connection', config),
   connect: (config) => ipcRenderer.invoke('db:connect', config),

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain, Menu } = require('electron')
 const path = require('node:path')
 const mysql = require('mysql2/promise')
 
@@ -57,6 +57,316 @@ const createWindow = () => {
   mainWindow.on('closed', () => {
     mainWindow = null
   })
+
+  // Create custom menu
+  createMenu()
+}
+
+function createMenu() {
+  const template = [
+    {
+      label: 'File',
+      submenu: [
+        {
+          label: 'New Connection',
+          accelerator: 'CmdOrCtrl+N',
+          click: () => {
+            mainWindow.webContents.send('menu-action', 'new-connection')
+          }
+        },
+        {
+          label: 'Recent Connections',
+          accelerator: 'CmdOrCtrl+R',
+          click: () => {
+            mainWindow.webContents.send('menu-action', 'recent-connections')
+          }
+        },
+        { type: 'separator' },
+        {
+          label: 'Import SQL',
+          accelerator: 'CmdOrCtrl+I',
+          click: () => {
+            mainWindow.webContents.send('menu-action', 'import-sql')
+          }
+        },
+        {
+          label: 'Export Data',
+          accelerator: 'CmdOrCtrl+E',
+          click: () => {
+            mainWindow.webContents.send('menu-action', 'export-data')
+          }
+        },
+        { type: 'separator' },
+        {
+          label: 'Settings',
+          accelerator: 'CmdOrCtrl+,',
+          click: () => {
+            mainWindow.webContents.send('menu-action', 'settings')
+          }
+        },
+        { type: 'separator' },
+        {
+          label: 'Exit',
+          accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Ctrl+Q',
+          click: () => {
+            app.quit()
+          }
+        }
+      ]
+    },
+    {
+      label: 'Database',
+      submenu: [
+        {
+          label: 'Connect',
+          accelerator: 'CmdOrCtrl+Shift+C',
+          click: () => {
+            mainWindow.webContents.send('menu-action', 'connect')
+          }
+        },
+        {
+          label: 'Disconnect',
+          accelerator: 'CmdOrCtrl+Shift+D',
+          click: () => {
+            mainWindow.webContents.send('menu-action', 'disconnect')
+          }
+        },
+        { type: 'separator' },
+        {
+          label: 'Refresh',
+          accelerator: 'F5',
+          click: () => {
+            mainWindow.webContents.send('menu-action', 'refresh')
+          }
+        },
+        {
+          label: 'Create Database',
+          click: () => {
+            mainWindow.webContents.send('menu-action', 'create-database')
+          }
+        },
+        { type: 'separator' },
+        {
+          label: 'Connection Info',
+          click: () => {
+            mainWindow.webContents.send('menu-action', 'connection-info')
+          }
+        }
+      ]
+    },
+    {
+      label: 'Query',
+      submenu: [
+        {
+          label: 'New Query',
+          accelerator: 'CmdOrCtrl+T',
+          click: () => {
+            mainWindow.webContents.send('menu-action', 'new-query')
+          }
+        },
+        {
+          label: 'Execute Query',
+          accelerator: 'CmdOrCtrl+Enter',
+          click: () => {
+            mainWindow.webContents.send('menu-action', 'execute-query')
+          }
+        },
+        { type: 'separator' },
+        {
+          label: 'Save Query',
+          accelerator: 'CmdOrCtrl+S',
+          click: () => {
+            mainWindow.webContents.send('menu-action', 'save-query')
+          }
+        },
+        {
+          label: 'Load Query',
+          accelerator: 'CmdOrCtrl+O',
+          click: () => {
+            mainWindow.webContents.send('menu-action', 'load-query')
+          }
+        },
+        { type: 'separator' },
+        {
+          label: 'Query History',
+          accelerator: 'CmdOrCtrl+H',
+          click: () => {
+            mainWindow.webContents.send('menu-action', 'query-history')
+          }
+        }
+      ]
+    },
+    {
+      label: 'View',
+      submenu: [
+        {
+          label: 'Toggle Sidebar',
+          accelerator: 'CmdOrCtrl+B',
+          click: () => {
+            mainWindow.webContents.send('menu-action', 'toggle-sidebar')
+          }
+        },
+        {
+          label: 'Toggle Dark Mode',
+          accelerator: 'CmdOrCtrl+Shift+T',
+          click: () => {
+            mainWindow.webContents.send('menu-action', 'toggle-dark-mode')
+          }
+        },
+        { type: 'separator' },
+        {
+          label: 'Actual Size',
+          accelerator: 'CmdOrCtrl+0',
+          click: () => {
+            mainWindow.webContents.setZoomLevel(0)
+          }
+        },
+        {
+          label: 'Zoom In',
+          accelerator: 'CmdOrCtrl+Plus',
+          click: () => {
+            const currentZoom = mainWindow.webContents.getZoomLevel()
+            mainWindow.webContents.setZoomLevel(currentZoom + 1)
+          }
+        },
+        {
+          label: 'Zoom Out',
+          accelerator: 'CmdOrCtrl+-',
+          click: () => {
+            const currentZoom = mainWindow.webContents.getZoomLevel()
+            mainWindow.webContents.setZoomLevel(currentZoom - 1)
+          }
+        },
+        { type: 'separator' },
+        {
+          label: 'Full Screen',
+          accelerator: process.platform === 'darwin' ? 'Ctrl+Cmd+F' : 'F11',
+          click: () => {
+            mainWindow.setFullScreen(!mainWindow.isFullScreen())
+          }
+        }
+      ]
+    },
+    {
+      label: 'Tools',
+      submenu: [
+        {
+          label: 'Performance Monitor',
+          click: () => {
+            mainWindow.webContents.send('menu-action', 'performance-monitor')
+          }
+        },
+        {
+          label: 'Connection Logs',
+          click: () => {
+            mainWindow.webContents.send('menu-action', 'connection-logs')
+          }
+        },
+        { type: 'separator' },
+        {
+          label: 'Database Schema',
+          click: () => {
+            mainWindow.webContents.send('menu-action', 'database-schema')
+          }
+        },
+        {
+          label: 'Generate ER Diagram',
+          click: () => {
+            mainWindow.webContents.send('menu-action', 'generate-er-diagram')
+          }
+        },
+        { type: 'separator' },
+        {
+          label: 'Developer Tools',
+          accelerator: process.platform === 'darwin' ? 'Alt+Cmd+I' : 'Ctrl+Shift+I',
+          click: () => {
+            mainWindow.webContents.toggleDevTools()
+          }
+        }
+      ]
+    },
+    {
+      label: 'Help',
+      submenu: [
+        {
+          label: 'Documentation',
+          click: () => {
+            mainWindow.webContents.send('menu-action', 'documentation')
+          }
+        },
+        {
+          label: 'Keyboard Shortcuts',
+          accelerator: 'CmdOrCtrl+/',
+          click: () => {
+            mainWindow.webContents.send('menu-action', 'keyboard-shortcuts')
+          }
+        },
+        { type: 'separator' },
+        {
+          label: 'Check for Updates',
+          click: () => {
+            mainWindow.webContents.send('menu-action', 'check-updates')
+          }
+        },
+        {
+          label: 'About DB Visualizer Pro',
+          click: () => {
+            mainWindow.webContents.send('menu-action', 'about')
+          }
+        }
+      ]
+    }
+  ]
+
+  // macOS specific menu adjustments
+  if (process.platform === 'darwin') {
+    template.unshift({
+      label: 'DB Visualizer Pro',
+      submenu: [
+        {
+          label: 'About DB Visualizer Pro',
+          click: () => {
+            mainWindow.webContents.send('menu-action', 'about')
+          }
+        },
+        { type: 'separator' },
+        {
+          label: 'Services',
+          role: 'services',
+          submenu: []
+        },
+        { type: 'separator' },
+        {
+          label: 'Hide DB Visualizer Pro',
+          accelerator: 'Command+H',
+          role: 'hide'
+        },
+        {
+          label: 'Hide Others',
+          accelerator: 'Command+Alt+H',
+          role: 'hideothers'
+        },
+        {
+          label: 'Show All',
+          role: 'unhide'
+        },
+        { type: 'separator' },
+        {
+          label: 'Quit',
+          accelerator: 'Command+Q',
+          click: () => {
+            app.quit()
+          }
+        }
+      ]
+    })
+
+    // Remove Exit from File menu on macOS
+    template[1].submenu = template[1].submenu.filter(item => item.label !== 'Exit')
+  }
+
+  const menu = Menu.buildFromTemplate(template)
+  Menu.setApplicationMenu(menu)
 }
 
 // App event listeners
