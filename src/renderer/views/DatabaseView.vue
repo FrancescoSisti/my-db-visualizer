@@ -111,18 +111,25 @@
           
           <div class="flex items-center space-x-3">
             <button
-              v-if="currentTable"
+              v-if="currentTable && currentView === 'list'"
               @click="viewTableStructure"
               class="btn-secondary text-sm"
             >
               Structure
             </button>
             <button
-              v-if="currentTable"
+              v-if="currentTable && currentView === 'list'"
               @click="viewTableData"
               class="btn-primary text-sm"
             >
               Browse Data
+            </button>
+            <button
+              v-if="currentTable && (currentView === 'data' || currentView === 'structure')"
+              @click="currentView = 'list'"
+              class="btn-secondary text-sm"
+            >
+              Back to Tables
             </button>
           </div>
         </div>
@@ -159,19 +166,54 @@
         </div>
 
         <!-- Table Content -->
-        <div v-else class="h-full p-6">
-          <div v-if="currentView === 'data'" class="h-full">
-            <div class="card h-full">
-              <h3 class="text-lg font-semibold mb-4">Table Data: {{ currentTable }}</h3>
-              <p class="text-gray-500">Data will be loaded here...</p>
-            </div>
+        <div v-else class="h-full">
+          <!-- Table List View -->
+          <div v-if="currentView === 'list'" class="h-full">
+            <TableList
+              :database-name="currentDatabase"
+              :tables="tables"
+              :selected-table="currentTable"
+              :loading="tablesLoading"
+              @refresh="refreshTables"
+              @select-table="selectTable"
+              @view-structure="viewTableStructure"
+              @view-data="viewTableData"
+              @export-data="exportTableData"
+              @duplicate-table="duplicateTable"
+              @delete-table="deleteTable"
+              @create-table="createTable"
+            />
           </div>
           
+          <!-- Table Data View -->
+          <div v-else-if="currentView === 'data'" class="h-full">
+            <TableDataView
+              :database-name="currentDatabase"
+              :table-name="currentTable"
+              :columns="tableColumns"
+              :data="tableData"
+              :total-rows="tableTotalRows"
+              :table-size="tableSize"
+              :loading="tableDataLoading"
+              :error="tableDataError"
+              @refresh="loadTableData"
+              @export="exportTableData"
+              @page-change="handlePageChange"
+              @page-size-change="handlePageSizeChange"
+              @sort="handleSort"
+              @search="handleSearch"
+            />
+          </div>
+          
+          <!-- Table Structure View -->
           <div v-else-if="currentView === 'structure'" class="h-full">
-            <div class="card h-full">
-              <h3 class="text-lg font-semibold mb-4">Table Structure: {{ currentTable }}</h3>
-              <p class="text-gray-500">Table structure will be loaded here...</p>
-            </div>
+            <TableStructure
+              :table-name="currentTable"
+              :columns="tableStructure"
+              :table-info="tableInfo"
+              :loading="tableStructureLoading"
+              @refresh="loadTableStructure"
+            />
           </div>
         </div>
       </div>
@@ -185,6 +227,9 @@ import { useRouter } from 'vue-router'
 import { useConnectionStore } from '@/stores/connection'
 import { useUIStore } from '@/stores/ui'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import TableList from '@/components/database/TableList.vue'
+import TableDataView from '@/components/database/TableDataView.vue'
+import TableStructure from '@/components/database/TableStructure.vue'
 
 const router = useRouter()
 const connectionStore = useConnectionStore()
@@ -193,9 +238,29 @@ const uiStore = useUIStore()
 // State
 const currentDatabase = ref('')
 const currentTable = ref('')
-const currentView = ref<'data' | 'structure'>('data')
+const currentView = ref<'list' | 'data' | 'structure'>('list')
 const loading = ref(false)
 const tablesLoading = ref(false)
+
+// Table data state
+const tableData = ref<any[]>([])
+const tableColumns = ref<Array<{ name: string; type: string }>>([])
+const tableTotalRows = ref(0)
+const tableSize = ref(0)
+const tableDataLoading = ref(false)
+const tableDataError = ref('')
+
+// Table structure state
+const tableStructure = ref<any[]>([])
+const tableInfo = ref<any>(null)
+const tableStructureLoading = ref(false)
+
+// Pagination state
+const currentPage = ref(1)
+const pageSize = ref(50)
+const sortColumn = ref('')
+const sortDirection = ref<'asc' | 'desc'>('asc')
+const searchTerm = ref('')
 
 // Computed
 const isConnected = computed(() => connectionStore.isConnected)
@@ -206,7 +271,17 @@ const tables = computed(() => connectionStore.tables)
 const pageTitle = computed(() => {
   if (!currentDatabase.value) return 'Database Explorer'
   if (!currentTable.value) return `Database: ${currentDatabase.value}`
-  return `Table: ${currentTable.value}`
+  
+  switch (currentView.value) {
+    case 'list':
+      return `Tables in ${currentDatabase.value}`
+    case 'data':
+      return `Data: ${currentTable.value}`
+    case 'structure':
+      return `Structure: ${currentTable.value}`
+    default:
+      return `Table: ${currentTable.value}`
+  }
 })
 
 // Methods
@@ -251,15 +326,212 @@ async function selectDatabase(database: string) {
 
 function selectTable(tableName: string) {
   currentTable.value = tableName
-  currentView.value = 'data'
+  currentView.value = 'list'
 }
 
-function viewTableStructure() {
+async function loadTableData() {
+  if (!currentDatabase.value || !currentTable.value) return
+  
+  tableDataLoading.value = true
+  tableDataError.value = ''
+  
+  try {
+    const offset = (currentPage.value - 1) * pageSize.value
+    const result = await connectionStore.executeQuery(
+      `SELECT * FROM \`${currentTable.value}\` LIMIT ${pageSize.value} OFFSET ${offset}`
+    )
+    
+    if (result.success && result.data) {
+      tableData.value = result.data
+      tableColumns.value = result.fields?.map(field => ({
+        name: field.name,
+        type: field.type
+      })) || []
+    } else {
+      tableDataError.value = result.message || 'Failed to load table data'
+    }
+  } catch (error) {
+    tableDataError.value = error instanceof Error ? error.message : 'Unknown error occurred'
+  } finally {
+    tableDataLoading.value = false
+  }
+}
+
+async function loadTableStructure() {
+  if (!currentDatabase.value || !currentTable.value) return
+  
+  tableStructureLoading.value = true
+  
+  try {
+    const result = await connectionStore.executeQuery(
+      `DESCRIBE \`${currentTable.value}\``
+    )
+    
+    if (result.success && result.data) {
+      tableStructure.value = result.data
+    }
+    
+    // Get table info
+    const infoResult = await connectionStore.executeQuery(
+      `SELECT 
+        table_rows as Rows,
+        data_length as Data_length,
+        engine as Engine,
+        table_collation as Collation
+       FROM information_schema.tables 
+       WHERE table_schema = '${currentDatabase.value}' AND table_name = '${currentTable.value}'`
+    )
+    
+    if (infoResult.success && infoResult.data && infoResult.data.length > 0) {
+      tableInfo.value = infoResult.data[0]
+      tableTotalRows.value = infoResult.data[0].Rows || 0
+      tableSize.value = infoResult.data[0].Data_length || 0
+    }
+  } catch (error) {
+    console.error('Failed to load table structure:', error)
+  } finally {
+    tableStructureLoading.value = false
+  }
+}
+
+function handlePageChange(page: number) {
+  currentPage.value = page
+  loadTableData()
+}
+
+function handlePageSizeChange(size: number) {
+  pageSize.value = size
+  currentPage.value = 1
+  loadTableData()
+}
+
+function handleSort(column: string, direction: 'asc' | 'desc') {
+  sortColumn.value = column
+  sortDirection.value = direction
+  loadTableData()
+}
+
+function handleSearch(term: string) {
+  searchTerm.value = term
+  currentPage.value = 1
+  loadTableData()
+}
+
+async function exportTableData(tableName: string) {
+  try {
+    const result = await connectionStore.executeQuery(
+      `SELECT * FROM \`${tableName}\``
+    )
+    
+    if (result.success && result.data) {
+      const headers = result.fields?.map(field => field.name) || []
+      await window.electronAPI.fileSystem.exportData({
+        rows: result.data,
+        headers
+      })
+      
+      uiStore.showToast({
+        title: 'Export successful',
+        message: `Exported ${result.data.length} rows from ${tableName}`,
+        type: 'success'
+      })
+    }
+  } catch (error) {
+    uiStore.showToast({
+      title: 'Export failed',
+      message: error instanceof Error ? error.message : 'Unknown error occurred',
+      type: 'error'
+    })
+  }
+}
+
+async function duplicateTable(tableName: string) {
+  const newTableName = `${tableName}_copy_${Date.now()}`
+  
+  try {
+    const result = await connectionStore.executeQuery(
+      `CREATE TABLE \`${newTableName}\` AS SELECT * FROM \`${tableName}\``
+    )
+    
+    if (result.success) {
+      uiStore.showToast({
+        title: 'Table duplicated',
+        message: `Created ${newTableName} as a copy of ${tableName}`,
+        type: 'success'
+      })
+      await refreshTables()
+    }
+  } catch (error) {
+    uiStore.showToast({
+      title: 'Duplication failed',
+      message: error instanceof Error ? error.message : 'Unknown error occurred',
+      type: 'error'
+    })
+  }
+}
+
+async function deleteTable(tableName: string) {
+  if (!confirm(`Are you sure you want to delete the table "${tableName}"? This action cannot be undone.`)) {
+    return
+  }
+  
+  try {
+    const result = await connectionStore.executeQuery(
+      `DROP TABLE \`${tableName}\``
+    )
+    
+    if (result.success) {
+      uiStore.showToast({
+        title: 'Table deleted',
+        message: `Successfully deleted table ${tableName}`,
+        type: 'success'
+      })
+      currentTable.value = ''
+      await refreshTables()
+    }
+  } catch (error) {
+    uiStore.showToast({
+      title: 'Deletion failed',
+      message: error instanceof Error ? error.message : 'Unknown error occurred',
+      type: 'error'
+    })
+  }
+}
+
+async function createTable(tableName: string) {
+  try {
+    const result = await connectionStore.executeQuery(
+      `CREATE TABLE \`${tableName}\` (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    )
+    
+    if (result.success) {
+      uiStore.showToast({
+        title: 'Table created',
+        message: `Successfully created table ${tableName}`,
+        type: 'success'
+      })
+      await refreshTables()
+    }
+  } catch (error) {
+    uiStore.showToast({
+      title: 'Creation failed',
+      message: error instanceof Error ? error.message : 'Unknown error occurred',
+      type: 'error'
+    })
+  }
+}
+
+async function viewTableStructure() {
   currentView.value = 'structure'
+  await loadTableStructure()
 }
 
-function viewTableData() {
+async function viewTableData() {
   currentView.value = 'data'
+  await loadTableData()
 }
 
 // Initialize

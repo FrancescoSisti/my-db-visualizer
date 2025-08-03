@@ -146,8 +146,8 @@ export function useDatabase() {
   async function loadDatabases(): Promise<void> {
     try {
       const result = await window.electronAPI.database.getDatabases()
-      if (result.success) {
-        databases.value = result.data.map((row: any) => Object.values(row)[0])
+      if (result.success && result.data) {
+        databases.value = result.data.map((row: any) => Object.values(row)[0] as string)
       }
     } catch (error) {
       console.error('Failed to load databases:', error)
@@ -184,7 +184,7 @@ export function useDatabase() {
   async function loadTables(databaseName: string): Promise<void> {
     try {
       const result = await window.electronAPI.database.getTables(databaseName)
-      if (result.success) {
+      if (result.success && result.data) {
         // Get table info with row counts and sizes
         const tablePromises = result.data.map(async (row: any) => {
           const tableName = Object.values(row)[0] as string
@@ -263,7 +263,7 @@ export function useDatabase() {
   async function getTableStructure(database: string, table: string): Promise<TableColumn[]> {
     try {
       const result = await window.electronAPI.database.getTableStructure(database, table)
-      return result.success ? result.data : []
+      return result.success && result.data ? result.data : []
     } catch (error) {
       console.error('Failed to get table structure:', error)
       return []
@@ -280,7 +280,7 @@ export function useDatabase() {
     try {
       const result = await window.electronAPI.database.getTableData(database, table, limit, offset)
       return result.success ? {
-        data: result.data,
+        data: result.data || [],
         fields: result.fields || []
       } : { data: [], fields: [] }
     } catch (error) {
@@ -302,7 +302,7 @@ export function useDatabase() {
       
       if (result.success) {
         return {
-          data: result.data,
+          data: result.data || [],
           fields: result.fields || [],
           executionTime
         }
