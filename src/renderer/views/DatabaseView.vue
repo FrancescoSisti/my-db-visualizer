@@ -19,15 +19,26 @@
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
               Databases ({{ databases.length }})
             </span>
-            <button
-              @click="refreshDatabases"
-              class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-              title="Refresh databases"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
+            <div class="flex items-center space-x-1">
+              <button
+                @click="showCreateDatabaseModal = true"
+                class="p-1 text-gray-400 hover:text-green-600 dark:hover:text-green-400"
+                title="Create new database"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+              </button>
+              <button
+                @click="refreshDatabases"
+                class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                title="Refresh databases"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           <div v-if="loading" class="text-center py-8">
@@ -218,6 +229,13 @@
         </div>
       </div>
     </div>
+
+    <!-- Create Database Modal -->
+    <CreateDatabaseModal
+      :is-open="showCreateDatabaseModal"
+      @close="showCreateDatabaseModal = false"
+      @created="handleDatabaseCreated"
+    />
   </div>
 </template>
 
@@ -230,6 +248,7 @@ import EmptyState from '@/components/ui/EmptyState.vue'
 import TableList from '@/components/database/TableList.vue'
 import TableDataView from '@/components/database/TableDataView.vue'
 import TableStructure from '@/components/database/TableStructure.vue'
+import CreateDatabaseModal from '@/components/ui/CreateDatabaseModal.vue'
 
 const router = useRouter()
 const connectionStore = useConnectionStore()
@@ -241,6 +260,7 @@ const currentTable = ref('')
 const currentView = ref<'list' | 'data' | 'structure'>('list')
 const loading = ref(false)
 const tablesLoading = ref(false)
+const showCreateDatabaseModal = ref(false)
 
 // Table data state
 const tableData = ref<any[]>([])
@@ -534,6 +554,17 @@ async function viewTableData() {
   await loadTableData()
 }
 
+// Handle database creation
+async function handleDatabaseCreated(databaseName: string) {
+  showCreateDatabaseModal.value = false
+  await refreshDatabases()
+  
+  // Optionally select the newly created database
+  if (databases.value.some(db => db.Database === databaseName)) {
+    await selectDatabase(databaseName)
+  }
+}
+
 // Initialize
 onMounted(async () => {
   if (!isConnected.value) {
@@ -542,6 +573,11 @@ onMounted(async () => {
   }
   
   await refreshDatabases()
+  
+  // Listen for create database modal event
+  window.addEventListener('open-create-database-modal', () => {
+    showCreateDatabaseModal.value = true
+  })
 })
 </script>
 

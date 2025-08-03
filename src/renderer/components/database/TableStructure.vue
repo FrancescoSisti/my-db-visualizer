@@ -280,7 +280,7 @@ function formatBytes(bytes?: number) {
 }
 
 .info-title {
-  @apply text-md font-medium text-gray-900 dark:text-white mb-4;
+  @apply text-base font-medium text-gray-900 dark:text-white mb-4;
 }
 
 .info-grid {

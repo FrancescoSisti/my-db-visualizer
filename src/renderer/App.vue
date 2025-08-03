@@ -25,12 +25,12 @@ import { useDatabase } from './composables/useDatabase'
 const router = useRouter()
 const uiStore = useUIStore()
 const connectionStore = useConnectionStore()
-const { testConnection, connectToDatabase, disconnect } = useDatabase()
+const { disconnect } = useDatabase()
 
 const showConnectionInfo = ref(false)
 
 // Handle menu actions from main process
-const handleMenuAction = (event: Electron.IpcRendererEvent, action: string) => {
+const handleMenuAction = (_event: Electron.IpcRendererEvent, action: string) => {
   console.log(`Menu action received: ${action}`)
   
   switch (action) {
@@ -103,7 +103,7 @@ const handleMenuAction = (event: Electron.IpcRendererEvent, action: string) => {
       break
       
     case 'create-database':
-      uiStore.showToast('Create database feature coming soon!', 'info')
+      handleCreateDatabase()
       break
       
     case 'connection-info':
@@ -307,6 +307,22 @@ const handleConnectionInfo = () => {
   } else {
     uiStore.showToast('No active database connection', 'warning')
   }
+}
+
+const handleCreateDatabase = () => {
+  if (!connectionStore.isConnected) {
+    uiStore.showToast('Please connect to a database first', 'warning')
+    router.push('/connection')
+    return
+  }
+  
+  // Navigate to database view and trigger create database modal
+  if (router.currentRoute.value.path !== '/database') {
+    router.push('/database')
+  }
+  
+  // Dispatch event to open create database modal
+  window.dispatchEvent(new CustomEvent('open-create-database-modal'))
 }
 
 const showKeyboardShortcuts = () => {

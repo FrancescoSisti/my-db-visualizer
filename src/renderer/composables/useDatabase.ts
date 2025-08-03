@@ -332,6 +332,57 @@ export function useDatabase() {
     }
   }
 
+  // Create new database
+  async function createDatabase(
+    name: string,
+    charset?: string,
+    collation?: string
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      let sql = `CREATE DATABASE \`${name}\``
+      
+      if (charset) {
+        sql += ` CHARACTER SET ${charset}`
+      }
+      
+      if (collation) {
+        sql += ` COLLATE ${collation}`
+      }
+      
+      const result = await window.electronAPI.database.executeQuery(sql)
+      
+      if (result.success) {
+        // Refresh the database list
+        await loadDatabases()
+        
+        uiStore.showToast({
+          title: 'Success',
+          message: `Database '${name}' created successfully`,
+          type: 'success'
+        })
+        
+        return { success: true, message: 'Database created successfully' }
+      } else {
+        uiStore.showToast({
+          title: 'Error',
+          message: result.message || 'Failed to create database',
+          type: 'error'
+        })
+        
+        return { success: false, message: result.message || 'Failed to create database' }
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error occurred'
+      uiStore.showToast({
+        title: 'Error',
+        message,
+        type: 'error'
+      })
+      
+      return { success: false, message }
+    }
+  }
+
   // Computed properties
   const isConnected = computed(() => connectionStore.isConnected)
   const currentConnection = computed(() => connectionStore.currentConnection)
@@ -358,6 +409,7 @@ export function useDatabase() {
     getTableStructure,
     getTableData,
     executeQuery,
-    checkConnection
+    checkConnection,
+    createDatabase
   }
 } 
