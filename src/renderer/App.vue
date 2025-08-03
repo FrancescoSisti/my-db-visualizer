@@ -102,9 +102,13 @@ const handleMenuAction = (_event: Electron.IpcRendererEvent, action: string) => 
       uiStore.showToast('Settings feature coming soon!', 'info')
       break
       
-    case 'create-database':
-      handleCreateDatabase()
-      break
+            case 'create-database':
+          handleCreateDatabase()
+          break
+          
+        case 'create-table':
+          handleCreateTable()
+          break
       
     case 'connection-info':
       handleConnectionInfo()
@@ -323,6 +327,22 @@ const handleCreateDatabase = () => {
   
   // Dispatch event to open create database modal
   window.dispatchEvent(new CustomEvent('open-create-database-modal'))
+}
+
+const handleCreateTable = () => {
+  if (!connectionStore.isConnected) {
+    uiStore.showToast('Please connect to a database first', 'warning')
+    router.push('/connection')
+    return
+  }
+  
+  // Navigate to database view and trigger create table modal
+  if (router.currentRoute.value.path !== '/database') {
+    router.push('/database')
+  }
+  
+  // Dispatch event to open create table modal
+  window.dispatchEvent(new CustomEvent('open-create-table-modal'))
 }
 
 const showKeyboardShortcuts = () => {
